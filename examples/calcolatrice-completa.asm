@@ -1,9 +1,11 @@
 .arch i4004
-; calcolatrice-completa — multi-cifra, 4 operatori (+ - * /); la divisione
-; produce un risultato con 2 cifre decimali (divisione lunga su resto*10).
+; calcolatrice-completa — multi-cifra, 4 operatori (+ - * /). La sottrazione
+; gestisce il segno negativo (A<B); la divisione produce 2 cifre decimali
+; (divisione lunga su resto*10).
 ;   echo 10/3=  | retronet-4004 -io calc.rom   ->  3.33
+;   echo 3-5=   | retronet-4004 -io calc.rom   ->  -2
 ;   echo 99*99= | retronet-4004 -io calc.rom   ->  9801
-; In uscita il nibble 15 = '.' (mappato dal -io).
+; In uscita il nibble 11 = '-' e il nibble 15 = '.' (mappati dal -io).
 ; Layout RAM (banco 0): reg0=A/resto, reg1=B, reg2=risultato, reg3=scratch.
         LDM 0
         DCL
@@ -150,6 +152,28 @@ sb_lp:  SRC R2
         INC R3
         INC R5
         ISZ R6, sb_lp
+        JCN 0x2, sb_pos ; carry==1 -> reg0 >= reg1 (risultato >= 0)
+        JUN sb_neg      ; reg0 < reg1 -> negativo
+sb_pos: JUN disp
+sb_neg: JMS ncomp30     ; reg3 = comp9(reg0); ricalcola reg2 = reg1 - reg0
+        FIM R0, 0x10    ; M = reg1 (B)
+        FIM R2, 0x30    ; comp9(reg0)
+        FIM R4, 0x20    ; dest = reg2
+        FIM R6, 0x80
+        STC
+sn_lp:  SRC R2
+        RDM
+        SRC R0
+        ADM
+        DAA
+        SRC R4
+        WRM
+        INC R1
+        INC R3
+        INC R5
+        ISZ R6, sn_lp
+        LDM 11
+        WMP             ; segno '-'
         JUN disp
 ; --- moltiplicazione: reg2 = reg0 * reg1 (addizioni ripetute) ---
 do_mul: JMS clr2
@@ -317,6 +341,20 @@ nc1l:   LDM 9
         INC R3
         INC R5
         ISZ R6, nc1l
+        BBL 0
+; ncomp30: reg3 = complemento a 9 di reg0 (per la sottrazione col segno)
+ncomp30: FIM R2, 0x00
+        FIM R4, 0x30
+        FIM R6, 0x80
+nc0l:   LDM 9
+        STC
+        SRC R2
+        SBM
+        SRC R4
+        WRM
+        INC R3
+        INC R5
+        ISZ R6, nc0l
         BBL 0
 ; subtc: reg0 = reg0 + reg3 + 1 (= reg0 - reg1); A = 1 se reg0 >= reg1
 subtc:  FIM R0, 0x00
