@@ -3,6 +3,8 @@
 ; RAM e su Port[0], il riporto resta nel flag C. Stessi byte di
 ; retronet-4004/testdata/somma-bcd.rom.
 
+.arch i4004
+
         LDM 0
         DCL
         FIM R0, 0x00        ; cella 0

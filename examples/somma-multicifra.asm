@@ -4,6 +4,8 @@
 ; trasforma l'ultimo riporto nella cifra delle centinaia. Stessi byte di
 ; retronet-4004/testdata/somma-multicifra.rom.
 
+.arch i4004
+
         LDM 0
         DCL
         ; A = 47 nel registro RAM 0: char0 = 7 (unità), char1 = 4 (decine)

@@ -3,6 +3,9 @@
 // Uso:
 //
 //	retronet-asm build <file.asm> [-o <out.rom>]
+//
+// L'architettura si sceglie con una direttiva ".arch <nome>" sulla prima riga
+// di codice del sorgente (default: i4004 se assente).
 package main
 
 import (
@@ -12,13 +15,24 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/retronet-labs/retronet-asm/arch"
 	"github.com/retronet-labs/retronet-asm/arch/i4004"
 	"github.com/retronet-labs/retronet-asm/internal/emitter"
 	"github.com/retronet-labs/retronet-asm/internal/lexer"
 	"github.com/retronet-labs/retronet-asm/internal/parser"
+	"github.com/retronet-labs/retronet-asm/internal/source"
 )
 
 const usage = "uso: retronet-asm build <file.asm> [-o <out.rom>]"
+
+// defaultArch è l'architettura usata se il sorgente non ha la direttiva .arch.
+const defaultArch = "i4004"
+
+// arches è il registro delle architetture supportate (nome → costruttore).
+// Aggiungere qui i8008/i8080 quando esisteranno.
+var arches = map[string]func() arch.Arch{
+	"i4004": i4004.New,
+}
 
 func main() {
 	if len(os.Args) < 2 || os.Args[1] != "build" {
@@ -46,7 +60,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	code, err := assemble(string(src))
+	// La direttiva .arch (prima riga di codice) sceglie l'architettura.
+	archName, body, err := source.SplitDirective(string(src))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "errore: %v\n", err)
+		os.Exit(1)
+	}
+	if archName == "" {
+		archName = defaultArch
+	}
+	mk, ok := arches[archName]
+	if !ok {
+		fmt.Fprintf(os.Stderr, "architettura sconosciuta %q (disponibili: %s)\n", archName, available())
+		os.Exit(1)
+	}
+
+	code, err := assemble(body, mk())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "errore di assemblaggio: %v\n", err)
 		os.Exit(1)
@@ -60,7 +89,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "errore scrittura %q: %v\n", outPath, err)
 		os.Exit(1)
 	}
-	fmt.Printf("assemblato %s -> %s (%d byte)\n", input, outPath, len(code))
+	fmt.Printf("assemblato %s (%s) -> %s (%d byte)\n", input, archName, outPath, len(code))
 }
 
 // splitArgs estrae l'unico argomento posizionale (il file .asm) dai flag,
@@ -88,8 +117,17 @@ func splitArgs(args []string) (input string, flagArgs []string, err error) {
 	return positional[0], flagArgs, nil
 }
 
-// assemble esegue l'intera pipeline: lexer → parser → emitter (arch i4004).
-func assemble(src string) ([]byte, error) {
+// available elenca le architetture registrate (per i messaggi d'errore).
+func available() string {
+	names := make([]string, 0, len(arches))
+	for n := range arches {
+		names = append(names, n)
+	}
+	return strings.Join(names, ", ")
+}
+
+// assemble esegue l'intera pipeline: lexer → parser → emitter (architettura a).
+func assemble(src string, a arch.Arch) ([]byte, error) {
 	toks, err := lexer.Tokenize(src)
 	if err != nil {
 		return nil, err
@@ -98,5 +136,5 @@ func assemble(src string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return emitter.Assemble(stmts, i4004.New())
+	return emitter.Assemble(stmts, a)
 }

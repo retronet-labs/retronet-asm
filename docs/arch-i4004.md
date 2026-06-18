@@ -148,8 +148,12 @@ risolve un numero, il secondo chiede l'indirizzo al `Resolver`.
 ## Aggiungere una nuova architettura (in futuro)
 
 Per `i8008`/`i8080` basta un nuovo pacchetto `arch/iXXXX` che implementa
-`arch.Arch` (la sua tabella + `Size`/`Encode`). Lexer, parser ed emitter restano
-identici: ricevono l'arch da usare e la interrogano. È il senso della struttura
-`arch/`.
+`arch.Arch` (la sua tabella + `Size`/`Encode`) e una riga nel registro
+`arches` della CLI (`cmd/retronet-asm`). Lexer, parser ed emitter restano
+identici: ricevono l'arch da usare e la interrogano.
+
+Quale architettura usare lo decide la **direttiva `.arch <nome>`** sulla prima
+riga del sorgente (vedi `docs/sintassi-asm.md`), risolta dal package
+`internal/source` prima del lexer; in assenza, default `i4004`.
 
 I test sono in [`arch/i4004/i4004_test.go`](../arch/i4004/i4004_test.go).

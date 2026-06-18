@@ -37,6 +37,7 @@ retronet-4004 -trace -dump-ram out.rom
 
 ## Sintassi in breve
 
+- `.arch <nome>` sulla prima riga sceglie l'architettura (default `i4004`).
 - Una istruzione per riga; `;` inizia un commento.
 - `label:` definisce una label (anche `loop: ADD R1` sulla stessa riga).
 - Registri `R0`–`R15`; numeri decimali (`12`) o esadecimali (`0x0C`).

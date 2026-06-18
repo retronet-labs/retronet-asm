@@ -9,6 +9,22 @@ retronet-asm build programma.asm -o programma.rom
 
 ---
 
+## Direttiva di architettura: `.arch`
+
+La prima riga "di codice" (saltando righe vuote e commenti) può dichiarare per
+quale CPU è scritto il programma:
+
+```asm
+.arch i4004
+```
+
+L'assembler usa quel nome per scegliere il backend. La direttiva **non produce
+byte** (è solo metadato). Se assente, si assume `i4004`. Un nome non registrato
+dà errore (es. `.arch i8080` finché i8080 non esiste). In futuro le architetture
+disponibili saranno `i4004`, `i8008`, `i8080`.
+
+---
+
 ## Regole generali
 
 - **Una istruzione per riga.**

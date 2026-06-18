@@ -2,6 +2,8 @@
 ; Equivalente a retronet-4004/examples/moltiplicazione: assemblato produce
 ; gli stessi byte di testdata/moltiplicazione.rom.
 
+.arch i4004
+
         LDM 0
         DCL                 ; banco RAM 0
         FIM R0, 0x03        ; R1 = 3 (addendo)
