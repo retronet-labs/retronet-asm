@@ -71,6 +71,10 @@ In [`examples/`](examples/):
 | `moltiplicazione.asm` | 3 × 4 con loop ISZ |
 | `somma-bcd.asm`     | calcolatrice BCD a cifra singola (7 + 5) |
 | `somma-multicifra.asm` | addizione BCD multi-cifra (47 + 58 = 105) |
+| `sottrazione-bcd.asm` | sottrazione BCD a cifra singola (7 − 5, TCS) |
+| `sottrazione-multicifra.asm` | sottrazione BCD multi-cifra (52 − 27 = 25) |
+| `moltiplicazione-bcd.asm` | moltiplicazione per addizioni ripetute (25 × 5 = 125) |
+| `divisione-bcd.asm` | divisione per sottrazioni ripetute, con JCN (7 / 2 = 3 r 1) |
 
 Gli ultimi tre, assemblati, producono **gli stessi byte** delle ROM di esempio
 di retronet-4004 (`testdata/`): è la validazione incrociata assembler↔emulatore.

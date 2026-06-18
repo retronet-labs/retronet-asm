@@ -1,0 +1,75 @@
+package emitter
+
+import (
+	"bytes"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/retronet-labs/retronet-asm/arch/i4004"
+	"github.com/retronet-labs/retronet-asm/internal/lexer"
+	"github.com/retronet-labs/retronet-asm/internal/parser"
+	"github.com/retronet-labs/retronet-asm/internal/source"
+)
+
+// assembleFile riproduce la pipeline della CLI sui .asm di examples/:
+// direttiva .arch (default i4004) → lexer → parser → emitter.
+func assembleFile(t *testing.T, name string) []byte {
+	t.Helper()
+	src, err := os.ReadFile(filepath.Join("..", "..", "examples", name))
+	if err != nil {
+		t.Fatalf("lettura %s: %v", name, err)
+	}
+	archName, body, err := source.SplitDirective(string(src))
+	if err != nil {
+		t.Fatalf("%s: direttiva: %v", name, err)
+	}
+	if archName != "" && archName != "i4004" {
+		t.Fatalf("%s: architettura %q non supportata in questo test", name, archName)
+	}
+	toks, err := lexer.Tokenize(body)
+	if err != nil {
+		t.Fatalf("%s: lexer: %v", name, err)
+	}
+	stmts, err := parser.Parse(toks)
+	if err != nil {
+		t.Fatalf("%s: parser: %v", name, err)
+	}
+	code, err := Assemble(stmts, i4004.New())
+	if err != nil {
+		t.Fatalf("%s: assemble: %v", name, err)
+	}
+	return code
+}
+
+// TestExamplesGolden protegge i .asm dell'aritmetica BCD (Step 13) da regressioni
+// dell'assembler. I byte attesi sono quelli prodotti dalla pipeline e verificati
+// eseguendo le ROM su retronet-4004.
+func TestExamplesGolden(t *testing.T) {
+	cases := map[string][]byte{
+		"sottrazione-bcd.asm": {
+			0xD0, 0xFD, 0x20, 0x00, 0x21, 0xD5, 0xB1, 0xD7,
+			0xB2, 0xFA, 0xF9, 0x91, 0x82, 0xFB, 0xE0, 0x40, 0x0F,
+		},
+		"sottrazione-multicifra.asm": {
+			0xD0, 0xFD, 0x20, 0x00, 0x21, 0xD2, 0xE0, 0x20, 0x01, 0x21, 0xD5, 0xE0, 0x22, 0x10, 0x23, 0xD7,
+			0xE0, 0x22, 0x11, 0x23, 0xD2, 0xE0, 0x20, 0x00, 0x22, 0x10, 0x24, 0x20, 0x26, 0xE0, 0xFA, 0xF9,
+			0x23, 0xE8, 0x21, 0xEB, 0xFB, 0x25, 0xE0, 0x61, 0x63, 0x65, 0x76, 0x1F, 0x40, 0x2C,
+		},
+		"moltiplicazione-bcd.asm": {
+			0xD0, 0xFD, 0x20, 0x00, 0x21, 0xD5, 0xE0, 0x20, 0x01, 0x21, 0xD2, 0xE0, 0x26, 0x0B, 0x20, 0x00,
+			0x22, 0x10, 0x24, 0xD0, 0xF1, 0x23, 0xE9, 0x21, 0xEB, 0xFB, 0x23, 0xE0, 0x61, 0x63, 0x74, 0x15,
+			0x77, 0x0E, 0x40, 0x22,
+		},
+		"divisione-bcd.asm": {
+			0xD0, 0xFD, 0xD2, 0xB1, 0xD7, 0xB2, 0xD0, 0xB3, 0xFA, 0xF9, 0x91, 0x82, 0xFB, 0x12, 0x11, 0x40,
+			0x15, 0xB2, 0x63, 0x40, 0x08, 0x20, 0x00, 0x21, 0xA3, 0xE0, 0x20, 0x01, 0x21, 0xA2, 0xE0, 0x40,
+			0x1F,
+		},
+	}
+	for name, want := range cases {
+		if got := assembleFile(t, name); !bytes.Equal(got, want) {
+			t.Errorf("%s =\n % X\natteso\n % X", name, got, want)
+		}
+	}
+}
