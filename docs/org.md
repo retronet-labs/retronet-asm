@@ -1,8 +1,7 @@
 # La direttiva `.org`
 
-> **Stato:** specifica della direttiva, **non ancora implementata** (vedi roadmap
-> in `CLAUDE.md`, item 13). Questo documento descrive il comportamento previsto e
-> serve da guida all'implementazione.
+> **Stato:** implementata e testata. La direttiva attraversa lexer → parser →
+> emitter; i test sono in `internal/lexer`, `internal/parser` e `internal/emitter`.
 
 `.org <indirizzo>` ("origin") dice all'assembler **a quale indirizzo della ROM va
 posizionato il codice che segue**. È una *direttiva*, non un'istruzione: non
@@ -152,32 +151,33 @@ codice:  ...
 
 ---
 
-## Note di implementazione (per domani)
+## Come è implementata
 
 Si incastra nella pipeline esistente **senza toccare l'interfaccia `arch`**: la
 direttiva riguarda gli *indirizzi*, non l'ISA (come `.arch`).
 
-1. **Riconoscimento** (`internal/source` o parser): trattare `.org <numero>` come
-   uno statement speciale, p.es. `Stmt` con un campo `Org *uint16` (analogo a come
-   `.arch` è gestito come metadato).
-2. **Passata 1 — indirizzi/Size** (`internal/emitter`): si tiene un contatore
-   `pc`. A `.org N`:
-   - se `N < pc` → errore ("indirizzo .org all'indietro");
+1. **Lexer** (`internal/lexer`): un `.` seguito da lettere produce un token
+   `Directive` (es. `.org`). `internal/source` lascia passare `.org` (estrae solo
+   `.arch`, che resta la prima riga di codice).
+2. **Parser** (`internal/parser`): un token `Directive` a inizio riga viene
+   riconosciuto; `.org <numero>` riempie il campo `Org *int` di `Stmt` (uno
+   statement a sé, senza label né istruzione). Una direttiva diversa da `.org` è
+   un errore.
+3. **Passata 1 — indirizzi** (`internal/emitter`): a `.org N`:
+   - se `N < pc` → errore ("`.org` precede la posizione corrente");
    - se `N > 0xFFF` → errore ("fuori dallo spazio ROM");
-   - altrimenti `pc = N`. Le label successive vengono registrate nella symbol
-     table agli indirizzi basati su `N`.
-3. **Passata 2 — Encode**: emettere `N - pc` byte di padding `0x00`, poi
-   continuare a codificare normalmente. Il `pc` deve coincidere con quello della
-   passata 1.
+   - altrimenti `pc = N`, così le label successive sono registrate nella symbol
+     table agli indirizzi giusti.
+4. **Passata 2 — Encode**: emette `N - pc` byte di padding `0x00`, poi continua a
+   codificare. Il `pc` coincide con quello della passata 1.
 
 Vedi [`due-passate.md`](due-passate.md) per il funzionamento delle due passate e
 della symbol table.
 
-### Test da aggiungere
+### Test (in `internal/{lexer,parser,emitter}`)
 
-- `.org` in avanti: il padding ha la lunghezza giusta e le label successive hanno
-  l'indirizzo atteso.
-- una label dopo `.org` usata come target di `JUN` punta all'indirizzo corretto.
-- `.org` all'indietro → errore.
-- `.org` fuori range (`> 0xFFF`) → errore.
-- `.org` multipli nello stesso file.
+- lexer: `.org 0x100` → token `Directive` + `Number`; `.` isolato → errore.
+- parser: `.org` riempie `Org`; `.org` senza/con operando errato o direttiva
+  sconosciuta → errore.
+- emitter: `.org` in avanti pad+label corrette; label dopo `.org` risolta da un
+  `JUN`; `.org` all'indietro e fuori range → errore.
