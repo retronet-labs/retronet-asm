@@ -25,6 +25,21 @@ disponibili saranno `i4004`, `i8008`, `i8080`.
 
 ---
 
+## Direttiva di posizione: `.org`
+
+`.org <indirizzo>` posiziona il codice che segue a un indirizzo preciso della ROM,
+riempiendo il vuoto con `NOP` (`0x00`). Serve soprattutto a rispettare il vincolo
+"stessa pagina" dei salti `JCN`/`ISZ`/`JIN` nei programmi oltre i 256 byte.
+
+```asm
+.org 0x100          ; il codice seguente parte a 0x100 (decimale: .org 256)
+```
+
+L'indirizzo deve essere ≥ alla posizione corrente (non si torna indietro) e dentro
+lo spazio ROM (`0x000`–`0xFFF`). Dettagli ed esempi in [`org.md`](org.md).
+
+---
+
 ## Regole generali
 
 - **Una istruzione per riga.**

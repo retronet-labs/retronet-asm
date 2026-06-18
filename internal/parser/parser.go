@@ -5,6 +5,7 @@ package parser
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/retronet-labs/retronet-asm/arch"
@@ -12,10 +13,12 @@ import (
 )
 
 // Stmt è una riga del programma: può definire una label, contenere
-// un'istruzione, o entrambe (es. "loop: ADD R1").
+// un'istruzione, o essere una direttiva ".org" (le tre cose sono esclusive,
+// tranne label + istruzione che possono coesistere, es. "loop: ADD R1").
 type Stmt struct {
 	Label string            // label definita qui (vuota se assente)
 	Instr *arch.Instruction // istruzione (nil se la riga ha solo una label)
+	Org   *int              // se non-nil: ".org <Org>" posiziona il codice qui
 	Line  int               // riga sorgente (1-based)
 }
 
@@ -41,6 +44,31 @@ func Parse(toks []lexer.Token) ([]Stmt, error) {
 
 		line := toks[i].Line
 		st := Stmt{Line: line}
+
+		// Direttiva (es. ".org <indirizzo>"): statement a sé, niente label/istruzione.
+		if toks[i].Type == lexer.Directive {
+			if strings.ToLower(toks[i].Text) != ".org" {
+				return nil, fmt.Errorf("riga %d: direttiva sconosciuta %q", line, toks[i].Text)
+			}
+			i++
+			if i >= len(toks) || toks[i].Type != lexer.Number {
+				return nil, fmt.Errorf("riga %d: sintassi: .org <indirizzo>", line)
+			}
+			addr, err := parseNum(toks[i].Text)
+			if err != nil {
+				return nil, fmt.Errorf("riga %d: %w", line, err)
+			}
+			i++
+			st.Org = &addr
+			if i < len(toks) && toks[i].Type != lexer.Newline && toks[i].Type != lexer.EOF {
+				return nil, fmt.Errorf("riga %d: token inatteso %q dopo .org", toks[i].Line, toks[i].Text)
+			}
+			stmts = append(stmts, st)
+			if i < len(toks) && toks[i].Type == lexer.Newline {
+				i++
+			}
+			continue
+		}
 
 		// Label opzionale: Ident seguito da ':'
 		if toks[i].Type == lexer.Ident && i+1 < len(toks) && toks[i+1].Type == lexer.Colon {
@@ -83,4 +111,20 @@ func Parse(toks []lexer.Token) ([]Stmt, error) {
 		}
 	}
 	return stmts, nil
+}
+
+// parseNum interpreta un numero decimale (`256`) o esadecimale (`0x100`).
+func parseNum(s string) (int, error) {
+	t := strings.TrimSpace(s)
+	var n int64
+	var err error
+	if strings.HasPrefix(strings.ToLower(t), "0x") {
+		n, err = strconv.ParseInt(t[2:], 16, 32)
+	} else {
+		n, err = strconv.ParseInt(t, 10, 32)
+	}
+	if err != nil {
+		return 0, fmt.Errorf("numero non valido %q", s)
+	}
+	return int(n), nil
 }

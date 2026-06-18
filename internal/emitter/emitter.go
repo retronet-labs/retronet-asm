@@ -17,6 +17,16 @@ func Assemble(stmts []parser.Stmt, a arch.Arch) ([]byte, error) {
 	// Passata 1: assegna gli indirizzi e registra le label.
 	pc := 0
 	for _, st := range stmts {
+		if st.Org != nil {
+			if *st.Org < pc {
+				return nil, fmt.Errorf("riga %d: .org 0x%03X precede la posizione corrente 0x%03X", st.Line, *st.Org, pc)
+			}
+			if *st.Org > 0xFFF {
+				return nil, fmt.Errorf("riga %d: .org 0x%X fuori dallo spazio ROM (max 0xFFF)", st.Line, *st.Org)
+			}
+			pc = *st.Org
+			continue
+		}
 		if st.Label != "" {
 			if err := syms.Define(st.Label, pc); err != nil {
 				return nil, fmt.Errorf("riga %d: %w", st.Line, err)
@@ -35,6 +45,13 @@ func Assemble(stmts []parser.Stmt, a arch.Arch) ([]byte, error) {
 	code := make([]byte, 0, pc)
 	pc = 0
 	for _, st := range stmts {
+		if st.Org != nil {
+			for pc < *st.Org { // riempi il vuoto fino all'indirizzo con NOP (0x00)
+				code = append(code, 0x00)
+				pc++
+			}
+			continue
+		}
 		if st.Instr == nil {
 			continue // riga di sola label: nessun byte
 		}

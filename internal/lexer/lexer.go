@@ -15,6 +15,7 @@ const (
 	Number              // numero decimale o esadecimale: inizia con una cifra
 	Colon               // ':' (definizione di label)
 	Comma               // ',' (separatore di operandi)
+	Directive           // direttiva: '.' seguito da lettere (es. ".org")
 )
 
 // Token è un'unità lessicale con il testo originale e la riga (1-based).
@@ -49,6 +50,16 @@ func Tokenize(src string) ([]Token, error) {
 		case c == ',':
 			toks = append(toks, Token{Comma, ",", line})
 			i++
+		case c == '.':
+			j := i + 1
+			for j < n && isIdent(src[j]) { // ".org", ".arch", ...
+				j++
+			}
+			if j == i+1 {
+				return nil, fmt.Errorf("riga %d: direttiva vuota dopo '.'", line)
+			}
+			toks = append(toks, Token{Directive, src[i:j], line})
+			i = j
 		case isDigit(c):
 			j := i
 			for j < n && isAlnum(src[j]) { // include "0x0C"

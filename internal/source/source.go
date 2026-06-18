@@ -23,14 +23,20 @@ func SplitDirective(src string) (arch string, body string, err error) {
 			return "", src, nil // la prima riga di codice non è una direttiva
 		}
 		fields := strings.Fields(code)
-		if fields[0] != ".arch" {
+		switch fields[0] {
+		case ".arch":
+			if len(fields) != 2 {
+				return "", "", fmt.Errorf("riga %d: sintassi: .arch <nome>", i+1)
+			}
+			lines[i] = "" // rimuovi la direttiva mantenendo il numero di riga
+			return fields[1], strings.Join(lines, "\n"), nil
+		case ".org":
+			// Direttiva posizionale: la gestiscono lexer/parser/emitter. Nessun
+			// .arch in testa → arch vuoto (default), sorgente invariato.
+			return "", src, nil
+		default:
 			return "", "", fmt.Errorf("riga %d: direttiva sconosciuta %q", i+1, fields[0])
 		}
-		if len(fields) != 2 {
-			return "", "", fmt.Errorf("riga %d: sintassi: .arch <nome>", i+1)
-		}
-		lines[i] = "" // rimuovi la direttiva mantenendo il numero di riga
-		return fields[1], strings.Join(lines, "\n"), nil
 	}
 	return "", src, nil // sorgente vuoto o di soli commenti
 }
