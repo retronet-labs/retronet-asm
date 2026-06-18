@@ -1,0 +1,6 @@
+# Binario della CLI
+/retronet-asm
+/retronet-asm.exe
+
+# ROM assemblate: artefatti di build (gli esempi versionati sono i .asm)
+*.rom

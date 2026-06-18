@@ -1,0 +1,5 @@
+# Normalizza i fine-riga a LF nel repository (gofmt/Go vogliono LF).
+* text=auto eol=lf
+
+# Le ROM sono binarie: non toccare i byte.
+*.rom binary
