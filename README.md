@@ -43,7 +43,8 @@ retronet-4004 -trace -dump-ram out.rom
 - `label:` definisce una label (anche `loop: ADD R1` sulla stessa riga).
 - Registri `R0`–`R15`; numeri decimali (`12`) o esadecimali (`0x0C`).
 - Virgola tra operandi opzionale; mnemonici case-insensitive, label case-sensitive.
-- Arresto: `halt: JUN halt`.
+- Direttive: `.org <addr>` posiziona il codice, `.byte v1, v2, ...` emette dati in ROM.
+- Arresto: `halt: JUN halt` (i4004) · `halt: JMP halt`/`HLT` (i8008).
 
 ```asm
         LDM 0
@@ -118,6 +119,8 @@ Lexer, parser ed emitter sono **indipendenti dall'architettura**: aggiungere
 - [x] CLI `build`
 - [x] Esempi + validazione contro le ROM golden di retronet-4004
 - [x] Backend `i8008` (set completo, validato su retronet-8008)
+- [x] Direttive `.org` (page alignment) e `.byte` (dati in ROM)
+- [ ] Direttiva `.equ` (costanti simboliche)
 - [ ] Backend `i8080`
 
 ---
