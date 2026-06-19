@@ -17,6 +17,7 @@ import (
 
 	"github.com/retronet-labs/retronet-asm/arch"
 	"github.com/retronet-labs/retronet-asm/arch/i4004"
+	"github.com/retronet-labs/retronet-asm/arch/i8008"
 	"github.com/retronet-labs/retronet-asm/internal/emitter"
 	"github.com/retronet-labs/retronet-asm/internal/lexer"
 	"github.com/retronet-labs/retronet-asm/internal/parser"
@@ -32,6 +33,7 @@ const defaultArch = "i4004"
 // Aggiungere qui i8008/i8080 quando esisteranno.
 var arches = map[string]func() arch.Arch{
 	"i4004": i4004.New,
+	"i8008": i8008.New,
 }
 
 func main() {
