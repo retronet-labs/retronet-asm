@@ -4,13 +4,15 @@
 // retronet-8008 (es. LAB, ADM, INB, RFC, HLT): l'assembler e l'emulatore sono
 // cosi' speculari. Le codifiche replicano i pattern di bit dell'ISA 8008.
 //
-// Per ora sono coperte le istruzioni a 1 byte senza operandi (move,
-// ALU-registro, INr/DCr, rotate, HLT, RET, ritorni condizionati); immediati,
-// indirizzi, RST e INP/OUT verranno aggiunti.
+// Copre l'intero set base: move tra registri/M, ALU registro e immediato,
+// INr/DCr, rotate, controllo di flusso (JMP/CAL e condizionati, RET e
+// condizionati, RST), I/O (INP/OUT) e HLT.
 package i8008
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/retronet-labs/retronet-asm/arch"
 )
@@ -23,7 +25,8 @@ const (
 	imm                // 2 byte, 1 immediato 0-255
 	addr               // 3 byte, 1 indirizzo/label 14 bit
 	rst                // 1 byte, 1 vettore 0-7
-	port               // 1 byte, 1 porta
+	inp                // 1 byte, 1 porta input 0-7
+	out                // 1 byte, 1 porta output 8-31
 )
 
 func (k kind) operands() int {
@@ -101,6 +104,31 @@ func buildSet() map[string]instr {
 		m["RT"+condNames[cc]] = instr{byte(0x23 | (cc << 3)), simple}
 	}
 
+	// Immediati (2 byte): load immediato LrI = 00 DDD 110, ALU immediato = 00 GGG 100.
+	for dst := 0; dst < 8; dst++ {
+		m["L"+regNames[dst]+"I"] = instr{byte(0x06 | (dst << 3)), imm}
+	}
+	immALU := [8]string{"ADI", "ACI", "SUI", "SBI", "NDI", "XRI", "ORI", "CPI"}
+	for g := 0; g < 8; g++ {
+		m[immALU[g]] = instr{byte(0x04 | (g << 3)), imm}
+	}
+
+	// Indirizzi (3 byte): JMP/CAL incondizionati e condizionati su C/Z/S/P.
+	m["JMP"] = instr{0x44, addr}
+	m["CAL"] = instr{0x46, addr}
+	for cc := 0; cc < 4; cc++ {
+		m["JF"+condNames[cc]] = instr{byte(0x40 | (cc << 3)), addr}
+		m["JT"+condNames[cc]] = instr{byte(0x60 | (cc << 3)), addr}
+		m["CF"+condNames[cc]] = instr{byte(0x42 | (cc << 3)), addr}
+		m["CT"+condNames[cc]] = instr{byte(0x62 | (cc << 3)), addr}
+	}
+
+	// RST (1 byte) e I/O (1 byte). Per INP/OUT il numero di porta sta nel campo
+	// a 5 bit dell'opcode: input 0-7, output 8-31.
+	m["RST"] = instr{0x05, rst}
+	m["INP"] = instr{0x41, inp}
+	m["OUT"] = instr{0x41, out}
+
 	return m
 }
 
@@ -139,6 +167,95 @@ func (I8008) Encode(in arch.Instruction, pc int, resolve arch.Resolver) ([]byte,
 	switch ins.kind {
 	case simple:
 		return []byte{ins.op}, nil
+
+	case imm:
+		v, err := parseNum(in.Operands[0])
+		if err != nil {
+			return nil, wrap(in.Line, err)
+		}
+		if v < 0 || v > 0xFF {
+			return nil, fmt.Errorf("riga %d: immediato %d fuori range 0-255", in.Line, v)
+		}
+		return []byte{ins.op, byte(v)}, nil
+
+	case addr:
+		a, err := parseAddr(in.Operands[0], resolve)
+		if err != nil {
+			return nil, wrap(in.Line, err)
+		}
+		if a < 0 || a > 0x3FFF {
+			return nil, fmt.Errorf("riga %d: indirizzo 0x%X fuori range 14 bit", in.Line, a)
+		}
+		// low byte, poi high byte mascherato a 6 bit (indirizzo a 14 bit).
+		return []byte{ins.op, byte(a & 0xFF), byte((a >> 8) & 0x3F)}, nil
+
+	case rst:
+		n, err := parseNum(in.Operands[0])
+		if err != nil {
+			return nil, wrap(in.Line, err)
+		}
+		if n < 0 || n > 7 {
+			return nil, fmt.Errorf("riga %d: vettore RST %d fuori range 0-7", in.Line, n)
+		}
+		return []byte{ins.op | (byte(n) << 3)}, nil
+
+	case inp:
+		p, err := parseNum(in.Operands[0])
+		if err != nil {
+			return nil, wrap(in.Line, err)
+		}
+		if p < 0 || p > 7 {
+			return nil, fmt.Errorf("riga %d: porta input %d fuori range 0-7", in.Line, p)
+		}
+		return []byte{ins.op | (byte(p) << 1)}, nil
+
+	case out:
+		p, err := parseNum(in.Operands[0])
+		if err != nil {
+			return nil, wrap(in.Line, err)
+		}
+		if p < 8 || p > 31 {
+			return nil, fmt.Errorf("riga %d: porta output %d fuori range 8-31", in.Line, p)
+		}
+		return []byte{ins.op | (byte(p) << 1)}, nil
 	}
-	return nil, fmt.Errorf("riga %d: codifica non ancora implementata per %s", in.Line, in.Mnemonic)
+	return nil, fmt.Errorf("riga %d: tipo di codifica non gestito per %s", in.Line, in.Mnemonic)
+}
+
+func wrap(line int, err error) error { return fmt.Errorf("riga %d: %w", line, err) }
+
+// parseNum interpreta un numero decimale ("12") o esadecimale ("0x0C").
+func parseNum(s string) (int, error) {
+	t := strings.TrimSpace(s)
+	var n int64
+	var err error
+	if strings.HasPrefix(strings.ToLower(t), "0x") {
+		n, err = strconv.ParseInt(t[2:], 16, 32)
+	} else {
+		n, err = strconv.ParseInt(t, 10, 32)
+	}
+	if err != nil {
+		return 0, fmt.Errorf("numero non valido %q", s)
+	}
+	return int(n), nil
+}
+
+// parseAddr interpreta un operando-indirizzo: se inizia con una cifra e' un
+// numero, altrimenti e' una label da risolvere con resolve.
+func parseAddr(s string, resolve arch.Resolver) (int, error) {
+	t := strings.TrimSpace(s)
+	if t == "" {
+		return 0, fmt.Errorf("operando indirizzo vuoto")
+	}
+	if t[0] >= '0' && t[0] <= '9' {
+		return parseNum(t)
+	}
+	if resolve == nil {
+		return 0, fmt.Errorf("label %q non risolvibile", t)
+	}
+	addr, ok := resolve(t)
+	if !ok {
+		return 0, fmt.Errorf("label non definita: %q", t)
+	}
+	return addr, nil
 }

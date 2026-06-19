@@ -60,3 +60,126 @@ func TestSameRegisterMoveIsNotDefined(t *testing.T) {
 		t.Error("LAA non deve essere un mnemonico valido (usa NOP)")
 	}
 }
+
+func TestEncodeImmediate(t *testing.T) {
+	tests := []struct {
+		mnem string
+		arg  string
+		want []byte
+	}{
+		{"LAI", "0x2A", []byte{0x06, 0x2A}},
+		{"LMI", "0xFF", []byte{0x3E, 0xFF}},
+		{"LLI", "5", []byte{0x36, 0x05}},
+		{"ADI", "5", []byte{0x04, 0x05}},
+		{"CPI", "0x10", []byte{0x3C, 0x10}},
+		{"XRI", "0", []byte{0x2C, 0x00}},
+	}
+	for _, tt := range tests {
+		if b := enc(t, tt.mnem, tt.arg); !bytesEqual(b, tt.want) {
+			t.Errorf("%s %s = % X, want % X", tt.mnem, tt.arg, b, tt.want)
+		}
+	}
+}
+
+func TestEncodeAddressNumeric(t *testing.T) {
+	tests := []struct {
+		mnem string
+		arg  string
+		want []byte
+	}{
+		{"JMP", "0x100", []byte{0x44, 0x00, 0x01}},
+		{"CAL", "0x0010", []byte{0x46, 0x10, 0x00}},
+		{"JFZ", "0x0004", []byte{0x48, 0x04, 0x00}},
+		{"JTP", "0x3FFF", []byte{0x78, 0xFF, 0x3F}},
+		{"CTC", "256", []byte{0x62, 0x00, 0x01}},
+	}
+	for _, tt := range tests {
+		if b := enc(t, tt.mnem, tt.arg); !bytesEqual(b, tt.want) {
+			t.Errorf("%s %s = % X, want % X", tt.mnem, tt.arg, b, tt.want)
+		}
+	}
+}
+
+func TestEncodeAddressResolvesLabel(t *testing.T) {
+	resolve := func(name string) (int, bool) {
+		if name == "loop" {
+			return 0x0123, true
+		}
+		return 0, false
+	}
+	b, err := New().Encode(arch.Instruction{Mnemonic: "JMP", Operands: []string{"loop"}, Line: 1}, 0, resolve)
+	if err != nil {
+		t.Fatalf("Encode(JMP loop) = %v", err)
+	}
+	if want := []byte{0x44, 0x23, 0x01}; !bytesEqual(b, want) {
+		t.Errorf("JMP loop = % X, want % X", b, want)
+	}
+	if _, err := New().Encode(arch.Instruction{Mnemonic: "JMP", Operands: []string{"ignota"}, Line: 1}, 0, resolve); err == nil {
+		t.Error("JMP verso label non definita: atteso errore")
+	}
+}
+
+func TestEncodeRSTAndIO(t *testing.T) {
+	tests := []struct {
+		mnem string
+		arg  string
+		want byte
+	}{
+		{"RST", "0", 0x05}, {"RST", "2", 0x15}, {"RST", "7", 0x3D},
+		{"INP", "0", 0x41}, {"INP", "7", 0x4F},
+		{"OUT", "8", 0x51}, {"OUT", "31", 0x7F},
+	}
+	for _, tt := range tests {
+		b := enc(t, tt.mnem, tt.arg)
+		if len(b) != 1 || b[0] != tt.want {
+			t.Errorf("%s %s = % X, want %02X", tt.mnem, tt.arg, b, tt.want)
+		}
+	}
+}
+
+func TestEncodeRangeErrors(t *testing.T) {
+	cases := []struct {
+		mnem string
+		arg  string
+	}{
+		{"ADI", "256"},    // immediato > 255
+		{"LAI", "-1"},     // immediato < 0
+		{"JMP", "0x4000"}, // indirizzo > 14 bit
+		{"RST", "8"},      // vettore > 7
+		{"INP", "8"},      // porta input > 7
+		{"OUT", "7"},      // porta output < 8
+		{"OUT", "32"},     // porta output > 31
+	}
+	for _, tt := range cases {
+		if _, err := New().Encode(arch.Instruction{Mnemonic: tt.mnem, Operands: []string{tt.arg}, Line: 1}, 0, nil); err == nil {
+			t.Errorf("%s %s: atteso errore di range", tt.mnem, tt.arg)
+		}
+	}
+}
+
+func TestSizeMultiByte(t *testing.T) {
+	a := New()
+	for _, tt := range []struct {
+		mnem string
+		want int
+	}{
+		{"LAI", 2}, {"ADI", 2}, {"JMP", 3}, {"CTP", 3}, {"RST", 1}, {"INP", 1}, {"OUT", 1},
+	} {
+		n, err := a.Size(arch.Instruction{Mnemonic: tt.mnem, Operands: []string{"0"}, Line: 1})
+		if err != nil || n != tt.want {
+			t.Errorf("Size(%s) = %d, %v; want %d", tt.mnem, n, err, tt.want)
+		}
+	}
+}
+
+func bytesEqual(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
