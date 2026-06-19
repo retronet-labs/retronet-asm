@@ -12,13 +12,14 @@ import (
 	"github.com/retronet-labs/retronet-asm/internal/lexer"
 )
 
-// Stmt è una riga del programma: può definire una label, contenere
-// un'istruzione, o essere una direttiva ".org" (le tre cose sono esclusive,
-// tranne label + istruzione che possono coesistere, es. "loop: ADD R1").
+// Stmt è una riga del programma: una label opzionale più, al massimo, una di:
+// istruzione, direttiva ".org" o direttiva ".byte". La label può precedere una
+// direttiva (es. "tabella: .byte 1, 2, 3") oltre che un'istruzione ("loop: ADD R1").
 type Stmt struct {
 	Label string            // label definita qui (vuota se assente)
-	Instr *arch.Instruction // istruzione (nil se la riga ha solo una label)
+	Instr *arch.Instruction // istruzione (nil se la riga non ne ha)
 	Org   *int              // se non-nil: ".org <Org>" posiziona il codice qui
+	Data  []byte            // se non-nil: ".byte v1, v2, ..." byte letterali da emettere
 	Line  int               // riga sorgente (1-based)
 }
 
@@ -45,39 +46,58 @@ func Parse(toks []lexer.Token) ([]Stmt, error) {
 		line := toks[i].Line
 		st := Stmt{Line: line}
 
-		// Direttiva (es. ".org <indirizzo>"): statement a sé, niente label/istruzione.
-		if toks[i].Type == lexer.Directive {
-			if strings.ToLower(toks[i].Text) != ".org" {
-				return nil, fmt.Errorf("riga %d: direttiva sconosciuta %q", line, toks[i].Text)
-			}
-			i++
-			if i >= len(toks) || toks[i].Type != lexer.Number {
-				return nil, fmt.Errorf("riga %d: sintassi: .org <indirizzo>", line)
-			}
-			addr, err := parseNum(toks[i].Text)
-			if err != nil {
-				return nil, fmt.Errorf("riga %d: %w", line, err)
-			}
-			i++
-			st.Org = &addr
-			if i < len(toks) && toks[i].Type != lexer.Newline && toks[i].Type != lexer.EOF {
-				return nil, fmt.Errorf("riga %d: token inatteso %q dopo .org", toks[i].Line, toks[i].Text)
-			}
-			stmts = append(stmts, st)
-			if i < len(toks) && toks[i].Type == lexer.Newline {
-				i++
-			}
-			continue
-		}
-
-		// Label opzionale: Ident seguito da ':'
+		// Label opzionale: Ident seguito da ':' (può precedere istruzione o direttiva).
 		if toks[i].Type == lexer.Ident && i+1 < len(toks) && toks[i+1].Type == lexer.Colon {
 			st.Label = toks[i].Text
 			i += 2
 		}
 
-		// Istruzione opzionale: Ident (mnemonico) + operandi fino a fine riga
-		if i < len(toks) && toks[i].Type == lexer.Ident {
+		switch {
+		// Direttiva: ".org <indirizzo>" oppure ".byte v1, v2, ...".
+		case i < len(toks) && toks[i].Type == lexer.Directive:
+			name := strings.ToLower(toks[i].Text)
+			i++
+			switch name {
+			case ".org":
+				if i >= len(toks) || toks[i].Type != lexer.Number {
+					return nil, fmt.Errorf("riga %d: sintassi: .org <indirizzo>", line)
+				}
+				addr, err := parseNum(toks[i].Text)
+				if err != nil {
+					return nil, fmt.Errorf("riga %d: %w", line, err)
+				}
+				i++
+				st.Org = &addr
+			case ".byte":
+				var data []byte
+				for i < len(toks) && toks[i].Type != lexer.Newline && toks[i].Type != lexer.EOF {
+					switch toks[i].Type {
+					case lexer.Number:
+						v, err := parseNum(toks[i].Text)
+						if err != nil {
+							return nil, fmt.Errorf("riga %d: %w", line, err)
+						}
+						if v < 0 || v > 0xFF {
+							return nil, fmt.Errorf("riga %d: .byte %d fuori range 0-255", line, v)
+						}
+						data = append(data, byte(v))
+					case lexer.Comma:
+						// separatore tra i valori
+					default:
+						return nil, fmt.Errorf("riga %d: .byte: token inatteso %q", line, toks[i].Text)
+					}
+					i++
+				}
+				if len(data) == 0 {
+					return nil, fmt.Errorf("riga %d: .byte richiede almeno un valore", line)
+				}
+				st.Data = data
+			default:
+				return nil, fmt.Errorf("riga %d: direttiva sconosciuta %q", line, name)
+			}
+
+		// Istruzione: Ident (mnemonico) + operandi fino a fine riga.
+		case i < len(toks) && toks[i].Type == lexer.Ident:
 			mnem := strings.ToUpper(toks[i].Text)
 			i++
 			var ops []string
@@ -96,11 +116,11 @@ func Parse(toks []lexer.Token) ([]Stmt, error) {
 			st.Instr = &arch.Instruction{Mnemonic: mnem, Operands: ops, Line: line}
 		}
 
-		// Dopo label e istruzione deve esserci fine riga.
+		// Dopo label/direttiva/istruzione deve esserci fine riga.
 		if i < len(toks) && toks[i].Type != lexer.Newline && toks[i].Type != lexer.EOF {
 			return nil, fmt.Errorf("riga %d: token inatteso %q", toks[i].Line, toks[i].Text)
 		}
-		if st.Label == "" && st.Instr == nil {
+		if st.Label == "" && st.Instr == nil && st.Org == nil && st.Data == nil {
 			return nil, fmt.Errorf("riga %d: riga non valida", line)
 		}
 

@@ -25,8 +25,9 @@ func Assemble(stmts []parser.Stmt, a arch.Arch) ([]byte, error) {
 				return nil, fmt.Errorf("riga %d: .org 0x%X fuori dallo spazio ROM (max 0xFFF)", st.Line, *st.Org)
 			}
 			pc = *st.Org
-			continue
 		}
+		// La label viene registrata dopo l'eventuale .org, così "etichetta: .org N"
+		// punta a N; per le altre righe punta alla posizione corrente.
 		if st.Label != "" {
 			if err := syms.Define(st.Label, pc); err != nil {
 				return nil, fmt.Errorf("riga %d: %w", st.Line, err)
@@ -39,6 +40,7 @@ func Assemble(stmts []parser.Stmt, a arch.Arch) ([]byte, error) {
 			}
 			pc += sz
 		}
+		pc += len(st.Data)
 	}
 
 	// Passata 2: codifica, risolvendo le label con la symbol table.
@@ -50,6 +52,11 @@ func Assemble(stmts []parser.Stmt, a arch.Arch) ([]byte, error) {
 				code = append(code, 0x00)
 				pc++
 			}
+			continue
+		}
+		if len(st.Data) > 0 { // .byte: emette i byte letterali
+			code = append(code, st.Data...)
+			pc += len(st.Data)
 			continue
 		}
 		if st.Instr == nil {

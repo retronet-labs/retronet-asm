@@ -40,6 +40,21 @@ lo spazio ROM (`0x000`–`0xFFF`). Dettagli ed esempi in [`org.md`](org.md).
 
 ---
 
+## Direttiva dati: `.byte`
+
+`.byte v1, v2, ...` emette byte letterali (0–255) direttamente nella ROM: serve
+per tabelle e costanti di dati. Può avere una label, che punta all'indirizzo del
+primo byte.
+
+```asm
+tabella: .byte 0x41, 0x42, 0x43, 0    ; quattro byte in ROM
+```
+
+I valori sono decimali o esadecimali, separati da virgole (o spazi). È
+indipendente dall'architettura (vale per `i4004` e `i8008`).
+
+---
+
 ## Regole generali
 
 - **Una istruzione per riga.**
