@@ -80,6 +80,7 @@ In [`examples/`](examples/):
 | `i8008-demo.asm` (i8008) | istruzioni 8008 a 1 byte senza operandi |
 | `i8008-loop.asm` (i8008) | loop 8008: somma 5+4+3+2+1 = 15 (`LBI`/`ADB`/`DCB`/`JFZ`) |
 | `i8008-sub.asm` (i8008) | subroutine 8008 `CAL`/`RET`: raddoppia 9 → 18 |
+| `i8008-calc.asm` (i8008) | calcolatrice binaria a una cifra, 4 operatori, I/O terminale (`6*7=`→`42`) |
 
 I `*-bcd`/`multicifra`, assemblati, producono **gli stessi byte** delle ROM di
 esempio di retronet-4004 (`testdata/`); gli `i8008-*` girano su retronet-8008 e
