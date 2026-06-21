@@ -41,6 +41,13 @@ func Assemble(stmts []parser.Stmt, a arch.Arch) ([]byte, error) {
 			pc += sz
 		}
 		pc += len(st.Data)
+		// Le costanti .equ entrano nella symbol table come le label (nome → valore),
+		// quindi sono usabili anche prima della loro definizione (risolte in passata 2).
+		if st.Equ != nil {
+			if err := syms.Define(st.Equ.Name, st.Equ.Value); err != nil {
+				return nil, fmt.Errorf("riga %d: %w", st.Line, err)
+			}
+		}
 	}
 
 	// Passata 2: codifica, risolvendo le label con la symbol table.

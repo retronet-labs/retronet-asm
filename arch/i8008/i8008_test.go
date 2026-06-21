@@ -172,6 +172,23 @@ func TestSizeMultiByte(t *testing.T) {
 	}
 }
 
+// Un immediato può essere un simbolo (costante .equ / label) risolto da resolve.
+func TestEncodeImmediateResolvesSymbol(t *testing.T) {
+	resolve := func(name string) (int, bool) {
+		if name == "COUNT" {
+			return 5, true
+		}
+		return 0, false
+	}
+	b, err := New().Encode(arch.Instruction{Mnemonic: "LBI", Operands: []string{"COUNT"}, Line: 1}, 0, resolve)
+	if err != nil {
+		t.Fatalf("Encode(LBI COUNT) = %v", err)
+	}
+	if !bytesEqual(b, []byte{0x0E, 0x05}) { // LBI = 0x0E, COUNT = 5
+		t.Errorf("LBI COUNT = % X, want 0E 05", b)
+	}
+}
+
 func bytesEqual(a, b []byte) bool {
 	if len(a) != len(b) {
 		return false

@@ -169,7 +169,7 @@ func (I8008) Encode(in arch.Instruction, pc int, resolve arch.Resolver) ([]byte,
 		return []byte{ins.op}, nil
 
 	case imm:
-		v, err := parseNum(in.Operands[0])
+		v, err := parseValue(in.Operands[0], resolve)
 		if err != nil {
 			return nil, wrap(in.Line, err)
 		}
@@ -179,7 +179,7 @@ func (I8008) Encode(in arch.Instruction, pc int, resolve arch.Resolver) ([]byte,
 		return []byte{ins.op, byte(v)}, nil
 
 	case addr:
-		a, err := parseAddr(in.Operands[0], resolve)
+		a, err := parseValue(in.Operands[0], resolve)
 		if err != nil {
 			return nil, wrap(in.Line, err)
 		}
@@ -190,7 +190,7 @@ func (I8008) Encode(in arch.Instruction, pc int, resolve arch.Resolver) ([]byte,
 		return []byte{ins.op, byte(a & 0xFF), byte((a >> 8) & 0x3F)}, nil
 
 	case rst:
-		n, err := parseNum(in.Operands[0])
+		n, err := parseValue(in.Operands[0], resolve)
 		if err != nil {
 			return nil, wrap(in.Line, err)
 		}
@@ -200,7 +200,7 @@ func (I8008) Encode(in arch.Instruction, pc int, resolve arch.Resolver) ([]byte,
 		return []byte{ins.op | (byte(n) << 3)}, nil
 
 	case inp:
-		p, err := parseNum(in.Operands[0])
+		p, err := parseValue(in.Operands[0], resolve)
 		if err != nil {
 			return nil, wrap(in.Line, err)
 		}
@@ -210,7 +210,7 @@ func (I8008) Encode(in arch.Instruction, pc int, resolve arch.Resolver) ([]byte,
 		return []byte{ins.op | (byte(p) << 1)}, nil
 
 	case out:
-		p, err := parseNum(in.Operands[0])
+		p, err := parseValue(in.Operands[0], resolve)
 		if err != nil {
 			return nil, wrap(in.Line, err)
 		}
@@ -240,22 +240,22 @@ func parseNum(s string) (int, error) {
 	return int(n), nil
 }
 
-// parseAddr interpreta un operando-indirizzo: se inizia con una cifra e' un
-// numero, altrimenti e' una label da risolvere con resolve.
-func parseAddr(s string, resolve arch.Resolver) (int, error) {
+// parseValue interpreta un operando numerico: un numero (decimale, esadecimale o
+// negativo) oppure un simbolo (label o costante .equ) risolto con resolve.
+func parseValue(s string, resolve arch.Resolver) (int, error) {
 	t := strings.TrimSpace(s)
 	if t == "" {
-		return 0, fmt.Errorf("operando indirizzo vuoto")
+		return 0, fmt.Errorf("operando vuoto")
 	}
-	if t[0] >= '0' && t[0] <= '9' {
+	if t[0] == '-' || (t[0] >= '0' && t[0] <= '9') {
 		return parseNum(t)
 	}
 	if resolve == nil {
-		return 0, fmt.Errorf("label %q non risolvibile", t)
+		return 0, fmt.Errorf("simbolo %q non risolvibile", t)
 	}
-	addr, ok := resolve(t)
+	v, ok := resolve(t)
 	if !ok {
-		return 0, fmt.Errorf("label non definita: %q", t)
+		return 0, fmt.Errorf("simbolo non definito: %q", t)
 	}
-	return addr, nil
+	return v, nil
 }

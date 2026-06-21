@@ -20,7 +20,15 @@ type Stmt struct {
 	Instr *arch.Instruction // istruzione (nil se la riga non ne ha)
 	Org   *int              // se non-nil: ".org <Org>" posiziona il codice qui
 	Data  []byte            // se non-nil: ".byte v1, v2, ..." byte letterali da emettere
+	Equ   *EquDef           // se non-nil: ".equ <Name> <Value>" costante simbolica
 	Line  int               // riga sorgente (1-based)
+}
+
+// EquDef è una costante simbolica definita da ".equ NOME valore"; viene
+// registrata nella symbol table e poi usabile come un numero negli operandi.
+type EquDef struct {
+	Name  string
+	Value int
 }
 
 // Parse converte i token in statement. Una riga ha la forma:
@@ -92,6 +100,21 @@ func Parse(toks []lexer.Token) ([]Stmt, error) {
 					return nil, fmt.Errorf("riga %d: .byte richiede almeno un valore", line)
 				}
 				st.Data = data
+			case ".equ":
+				if i >= len(toks) || toks[i].Type != lexer.Ident {
+					return nil, fmt.Errorf("riga %d: sintassi: .equ <nome> <valore>", line)
+				}
+				cname := toks[i].Text
+				i++
+				if i >= len(toks) || toks[i].Type != lexer.Number {
+					return nil, fmt.Errorf("riga %d: sintassi: .equ <nome> <valore>", line)
+				}
+				val, err := parseNum(toks[i].Text)
+				if err != nil {
+					return nil, fmt.Errorf("riga %d: %w", line, err)
+				}
+				i++
+				st.Equ = &EquDef{Name: cname, Value: val}
 			default:
 				return nil, fmt.Errorf("riga %d: direttiva sconosciuta %q", line, name)
 			}
@@ -120,7 +143,7 @@ func Parse(toks []lexer.Token) ([]Stmt, error) {
 		if i < len(toks) && toks[i].Type != lexer.Newline && toks[i].Type != lexer.EOF {
 			return nil, fmt.Errorf("riga %d: token inatteso %q", toks[i].Line, toks[i].Text)
 		}
-		if st.Label == "" && st.Instr == nil && st.Org == nil && st.Data == nil {
+		if st.Label == "" && st.Instr == nil && st.Org == nil && st.Data == nil && st.Equ == nil {
 			return nil, fmt.Errorf("riga %d: riga non valida", line)
 		}
 
