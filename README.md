@@ -81,6 +81,7 @@ In [`examples/`](examples/):
 | `i8008-loop.asm` (i8008) | loop 8008: somma 5+4+3+2+1 = 15 (`LBI`/`ADB`/`DCB`/`JFZ`) |
 | `i8008-sub.asm` (i8008) | subroutine 8008 `CAL`/`RET`: raddoppia 9 → 18 |
 | `i8008-calc.asm` (i8008) | calcolatrice binaria a una cifra, 4 operatori, I/O terminale (`6*7=`→`42`) |
+| `i8008-calc-multi.asm` (i8008) | calcolatrice binaria multi-cifra 0–255 (`12*12=`→`144`) |
 
 I `*-bcd`/`multicifra`, assemblati, producono **gli stessi byte** delle ROM di
 esempio di retronet-4004 (`testdata/`); gli `i8008-*` girano su retronet-8008 e
@@ -105,7 +106,7 @@ un'interfaccia (`arch.Arch`):
 | Parser           | `internal/parser`  | [docs/parser.md](docs/parser.md) |
 | Symbol table + emitter | `internal/symbols`, `internal/emitter` | [docs/due-passate.md](docs/due-passate.md) |
 | Backend Intel 4004 | `arch/i4004`     | [docs/arch-i4004.md](docs/arch-i4004.md) |
-| Backend Intel 8008 | `arch/i8008`     | [docs/arch-i8008.md](docs/arch-i8008.md) |
+| Backend Intel 8008 | `arch/i8008`     | [docs/arch-i8008.md](docs/arch-i8008.md) · guida d'uso: [docs/guida-i8008.md](docs/guida-i8008.md) |
 
 Lexer, parser ed emitter sono **indipendenti dall'architettura**: aggiungere
 `i8080` significa scrivere un nuovo pacchetto `arch/` che implementa
