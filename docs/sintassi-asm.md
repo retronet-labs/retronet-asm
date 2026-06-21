@@ -55,6 +55,24 @@ indipendente dall'architettura (vale per `i4004` e `i8008`).
 
 ---
 
+## Direttiva costanti: `.equ`
+
+`.equ NOME valore` dà un nome a un numero, usabile ovunque vada un valore: immediati
+(`LDM NOME`, `LAI NOME`), porte, vettori `RST`, target di salto (`JMP NOME`). Il nome
+entra nella symbol table come una label, quindi è usabile anche **prima** della sua
+definizione.
+
+```asm
+.equ COUNT 5
+.equ PORTA 1
+        LBI COUNT       ; B = 5
+        INP PORTA       ; legge la porta 1
+```
+
+Il valore è un numero (decimale o esadecimale). È indipendente dall'architettura.
+
+---
+
 ## Regole generali
 
 - **Una istruzione per riga.**
