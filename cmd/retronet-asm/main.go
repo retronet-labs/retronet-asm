@@ -18,6 +18,7 @@ import (
 	"github.com/retronet-labs/retronet-asm/arch"
 	"github.com/retronet-labs/retronet-asm/arch/i4004"
 	"github.com/retronet-labs/retronet-asm/arch/i8008"
+	"github.com/retronet-labs/retronet-asm/arch/i8080"
 	"github.com/retronet-labs/retronet-asm/internal/emitter"
 	"github.com/retronet-labs/retronet-asm/internal/lexer"
 	"github.com/retronet-labs/retronet-asm/internal/parser"
@@ -30,10 +31,10 @@ const usage = "uso: retronet-asm build <file.asm> [-o <out.rom>]"
 const defaultArch = "i4004"
 
 // arches è il registro delle architetture supportate (nome → costruttore).
-// Aggiungere qui i8008/i8080 quando esisteranno.
 var arches = map[string]func() arch.Arch{
 	"i4004": i4004.New,
 	"i8008": i8008.New,
+	"i8080": i8080.New,
 }
 
 func main() {

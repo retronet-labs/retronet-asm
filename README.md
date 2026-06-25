@@ -4,7 +4,7 @@ Assembler modulare e multi-architettura dell'ecosistema **RetroNet**. Traduce un
 sorgente testuale `.asm` in una ROM binaria `.rom`, risolvendo le label
 automaticamente — niente più programmi scritti come array di byte contati a mano.
 
-Architetture supportate: **Intel 4004** (`i4004`) e **Intel 8008** (`i8008`). In arrivo: `i8080`.
+Architetture supportate: **Intel 4004** (`i4004`), **Intel 8008** (`i8008`) e **Intel 8080** (`i8080`).
 
 Le ROM prodotte sono eseguibili dagli emulatori
 [retronet-4004](https://github.com/retronet-labs/retronet-4004) e
@@ -77,6 +77,7 @@ In [`examples/`](examples/):
 | `sottrazione-multicifra.asm` | sottrazione BCD multi-cifra (52 − 27 = 25) |
 | `moltiplicazione-bcd.asm` | moltiplicazione per addizioni ripetute (25 × 5 = 125) |
 | `divisione-bcd.asm` | divisione per sottrazioni ripetute, con JCN (7 / 2 = 3 r 1) |
+| `i8080-hello.asm` (i8080) | stampa `HI` sulla porta terminale convenzionale `1` |
 | `i8008-demo.asm` (i8008) | istruzioni 8008 a 1 byte senza operandi |
 | `i8008-loop.asm` (i8008) | loop 8008: somma 5+4+3+2+1 = 15 (`LBI`/`ADB`/`DCB`/`JFZ`) |
 | `i8008-sub.asm` (i8008) | subroutine 8008 `CAL`/`RET`: raddoppia 9 → 18 |
@@ -108,9 +109,8 @@ un'interfaccia (`arch.Arch`):
 | Backend Intel 4004 | `arch/i4004`     | [docs/arch-i4004.md](docs/arch-i4004.md) |
 | Backend Intel 8008 | `arch/i8008`     | [docs/arch-i8008.md](docs/arch-i8008.md) · guida d'uso: [docs/guida-i8008.md](docs/guida-i8008.md) |
 
-Lexer, parser ed emitter sono **indipendenti dall'architettura**: aggiungere
-`i8080` significa scrivere un nuovo pacchetto `arch/` che implementa
-`arch.Arch`, senza toccare il resto (come è stato fatto per `i8008`).
+Lexer, parser ed emitter sono **indipendenti dall'architettura**: ogni backend
+vive in un pacchetto `arch/` che implementa `arch.Arch`.
 
 ---
 
@@ -123,7 +123,7 @@ Lexer, parser ed emitter sono **indipendenti dall'architettura**: aggiungere
 - [x] Backend `i8008` (set completo, validato su retronet-8008)
 - [x] Direttive `.org` (page alignment) e `.byte` (dati in ROM)
 - [x] Direttiva `.equ` (costanti simboliche)
-- [ ] Backend `i8080`
+- [x] Backend `i8080`
 
 ---
 

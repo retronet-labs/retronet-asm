@@ -20,8 +20,7 @@ quale CPU è scritto il programma:
 
 L'assembler usa quel nome per scegliere il backend. La direttiva **non produce
 byte** (è solo metadato). Se assente, si assume `i4004`. Un nome non registrato
-dà errore (es. `.arch i8080` finché i8080 non esiste). In futuro le architetture
-disponibili saranno `i4004`, `i8008`, `i8080`.
+dà errore. Le architetture disponibili sono `i4004`, `i8008`, `i8080`.
 
 ---
 
