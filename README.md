@@ -122,7 +122,7 @@ Lexer, parser ed emitter sono **indipendenti dall'architettura**: aggiungere
 - [x] Esempi + validazione contro le ROM golden di retronet-4004
 - [x] Backend `i8008` (set completo, validato su retronet-8008)
 - [x] Direttive `.org` (page alignment) e `.byte` (dati in ROM)
-- [ ] Direttiva `.equ` (costanti simboliche)
+- [x] Direttiva `.equ` (costanti simboliche)
 - [ ] Backend `i8080`
 
 ---

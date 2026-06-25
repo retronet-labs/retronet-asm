@@ -9,13 +9,13 @@ import "fmt"
 type Type int
 
 const (
-	EOF     Type = iota // fine input
-	Newline             // fine riga (separa gli statement)
-	Ident               // mnemonico, registro o label: inizia con lettera o '_'
-	Number              // numero decimale o esadecimale: inizia con una cifra
-	Colon               // ':' (definizione di label)
-	Comma               // ',' (separatore di operandi)
-	Directive           // direttiva: '.' seguito da lettere (es. ".org")
+	EOF       Type = iota // fine input
+	Newline               // fine riga (separa gli statement)
+	Ident                 // mnemonico, registro o label: inizia con lettera o '_'
+	Number                // numero decimale o esadecimale: inizia con una cifra
+	Colon                 // ':' (definizione di label)
+	Comma                 // ',' (separatore di operandi)
+	Directive             // direttiva: '.' seguito da lettere (es. ".org")
 )
 
 // Token è un'unità lessicale con il testo originale e la riga (1-based).
