@@ -13,16 +13,28 @@ import (
 // Assemble traduce gli statement in byte usando l'architettura a.
 func Assemble(stmts []parser.Stmt, a arch.Arch) ([]byte, error) {
 	syms := symbols.New()
+	maxAddr := maxAddress(a)
 
 	// Passata 1: assegna gli indirizzi e registra le label.
+	base := 0
 	pc := 0
 	for _, st := range stmts {
+		if st.OrgBase != nil {
+			if pc != base {
+				return nil, fmt.Errorf("riga %d: .orgbase deve precedere codice e dati", st.Line)
+			}
+			if *st.OrgBase < 0 || *st.OrgBase > maxAddr {
+				return nil, fmt.Errorf("riga %d: .orgbase 0x%X fuori range (max 0x%X)", st.Line, *st.OrgBase, maxAddr)
+			}
+			base = *st.OrgBase
+			pc = base
+		}
 		if st.Org != nil {
 			if *st.Org < pc {
 				return nil, fmt.Errorf("riga %d: .org 0x%03X precede la posizione corrente 0x%03X", st.Line, *st.Org, pc)
 			}
-			if *st.Org > 0xFFF {
-				return nil, fmt.Errorf("riga %d: .org 0x%X fuori dallo spazio ROM (max 0xFFF)", st.Line, *st.Org)
+			if *st.Org > maxAddr {
+				return nil, fmt.Errorf("riga %d: .org 0x%X fuori dallo spazio ROM (max 0x%X)", st.Line, *st.Org, maxAddr)
 			}
 			pc = *st.Org
 		}
@@ -51,9 +63,18 @@ func Assemble(stmts []parser.Stmt, a arch.Arch) ([]byte, error) {
 	}
 
 	// Passata 2: codifica, risolvendo le label con la symbol table.
-	code := make([]byte, 0, pc)
+	code := make([]byte, 0, pc-base)
+	base = 0
 	pc = 0
 	for _, st := range stmts {
+		if st.OrgBase != nil {
+			if len(code) > 0 || pc != base {
+				return nil, fmt.Errorf("riga %d: .orgbase deve precedere codice e dati", st.Line)
+			}
+			base = *st.OrgBase
+			pc = base
+			continue
+		}
 		if st.Org != nil {
 			for pc < *st.Org { // riempi il vuoto fino all'indirizzo con NOP (0x00)
 				code = append(code, 0x00)
@@ -77,4 +98,11 @@ func Assemble(stmts []parser.Stmt, a arch.Arch) ([]byte, error) {
 		pc += len(b)
 	}
 	return code, nil
+}
+
+func maxAddress(a arch.Arch) int {
+	if a.Name() == "i4004" {
+		return 0x0FFF
+	}
+	return 0xFFFF
 }

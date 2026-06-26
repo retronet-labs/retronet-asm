@@ -46,7 +46,9 @@ retronet-4004 -trace -dump-ram out.rom
 - `label:` definisce una label (anche `loop: ADD R1` sulla stessa riga).
 - Registri `R0`–`R15`; numeri decimali (`12`) o esadecimali (`0x0C`).
 - Virgola tra operandi opzionale; mnemonici case-insensitive, label case-sensitive.
-- Direttive: `.org <addr>` posiziona il codice, `.byte v1, v2, ...` emette dati in ROM.
+- Direttive: `.org <addr>` posiziona il codice, `.orgbase <addr>` cambia il PC
+  logico senza padding, `.com` e' alias di `.orgbase 0x0100`, `.byte v1, v2,
+  ...` emette dati in ROM.
 - Arresto: `halt: JUN halt` (i4004) · `halt: JMP halt`/`HLT` (i8008).
 
 ```asm
@@ -128,6 +130,7 @@ vive in un pacchetto `arch/` che implementa `arch.Arch`.
 - [x] Direttiva `.equ` (costanti simboliche)
 - [x] Backend `i8080`
 - [x] Esempio end-to-end `i8080` -> `.COM` -> `retronet-cpm`
+- [x] Direttiva `.com`/`.orgbase` per programmi CP/M `.COM` senza padding
 
 ---
 

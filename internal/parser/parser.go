@@ -16,12 +16,13 @@ import (
 // istruzione, direttiva ".org" o direttiva ".byte". La label può precedere una
 // direttiva (es. "tabella: .byte 1, 2, 3") oltre che un'istruzione ("loop: ADD R1").
 type Stmt struct {
-	Label string            // label definita qui (vuota se assente)
-	Instr *arch.Instruction // istruzione (nil se la riga non ne ha)
-	Org   *int              // se non-nil: ".org <Org>" posiziona il codice qui
-	Data  []byte            // se non-nil: ".byte v1, v2, ..." byte letterali da emettere
-	Equ   *EquDef           // se non-nil: ".equ <Name> <Value>" costante simbolica
-	Line  int               // riga sorgente (1-based)
+	Label   string            // label definita qui (vuota se assente)
+	Instr   *arch.Instruction // istruzione (nil se la riga non ne ha)
+	Org     *int              // se non-nil: ".org <Org>" posiziona il codice qui
+	OrgBase *int              // se non-nil: ".orgbase <OrgBase>" cambia il PC logico senza padding
+	Data    []byte            // se non-nil: ".byte v1, v2, ..." byte letterali da emettere
+	Equ     *EquDef           // se non-nil: ".equ <Name> <Value>" costante simbolica
+	Line    int               // riga sorgente (1-based)
 }
 
 // EquDef è una costante simbolica definita da ".equ NOME valore"; viene
@@ -76,6 +77,19 @@ func Parse(toks []lexer.Token) ([]Stmt, error) {
 				}
 				i++
 				st.Org = &addr
+			case ".orgbase":
+				if i >= len(toks) || toks[i].Type != lexer.Number {
+					return nil, fmt.Errorf("riga %d: sintassi: .orgbase <indirizzo>", line)
+				}
+				addr, err := parseNum(toks[i].Text)
+				if err != nil {
+					return nil, fmt.Errorf("riga %d: %w", line, err)
+				}
+				i++
+				st.OrgBase = &addr
+			case ".com":
+				addr := 0x0100
+				st.OrgBase = &addr
 			case ".byte":
 				var data []byte
 				for i < len(toks) && toks[i].Type != lexer.Newline && toks[i].Type != lexer.EOF {
@@ -143,7 +157,7 @@ func Parse(toks []lexer.Token) ([]Stmt, error) {
 		if i < len(toks) && toks[i].Type != lexer.Newline && toks[i].Type != lexer.EOF {
 			return nil, fmt.Errorf("riga %d: token inatteso %q", toks[i].Line, toks[i].Text)
 		}
-		if st.Label == "" && st.Instr == nil && st.Org == nil && st.Data == nil && st.Equ == nil {
+		if st.Label == "" && st.Instr == nil && st.Org == nil && st.OrgBase == nil && st.Data == nil && st.Equ == nil {
 			return nil, fmt.Errorf("riga %d: riga non valida", line)
 		}
 
