@@ -7,8 +7,11 @@ automaticamente — niente più programmi scritti come array di byte contati a m
 Architetture supportate: **Intel 4004** (`i4004`), **Intel 8008** (`i8008`) e **Intel 8080** (`i8080`).
 
 Le ROM prodotte sono eseguibili dagli emulatori
-[retronet-4004](https://github.com/retronet-labs/retronet-4004) e
-[retronet-8008](https://github.com/retronet-labs/retronet-8008).
+[retronet-4004](https://github.com/retronet-labs/retronet-4004),
+[retronet-8008](https://github.com/retronet-labs/retronet-8008),
+[retronet-8080](https://github.com/retronet-labs/retronet-8080) e, per i
+programmi `.COM` didattici, da
+[retronet-cpm](https://github.com/retronet-labs/retronet-cpm).
 
 ---
 
@@ -124,6 +127,7 @@ vive in un pacchetto `arch/` che implementa `arch.Arch`.
 - [x] Direttive `.org` (page alignment) e `.byte` (dati in ROM)
 - [x] Direttiva `.equ` (costanti simboliche)
 - [x] Backend `i8080`
+- [x] Esempio end-to-end `i8080` -> `.COM` -> `retronet-cpm`
 
 ---
 
