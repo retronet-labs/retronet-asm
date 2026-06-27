@@ -40,6 +40,18 @@ func TestSplitDirectiveAbsent(t *testing.T) {
 	}
 }
 
+func TestSplitDirectiveLeavesParserDirectives(t *testing.T) {
+	for _, src := range []string{".equ X 1\nLDM X\n", ".com\nHLT\n", ".orgbase 0x100\nHLT\n"} {
+		arch, body, err := SplitDirective(src)
+		if err != nil {
+			t.Fatalf("SplitDirective(%q): %v", src, err)
+		}
+		if arch != "" || body != src {
+			t.Fatalf("SplitDirective(%q) = arch %q body %q", src, arch, body)
+		}
+	}
+}
+
 func TestSplitDirectiveErrors(t *testing.T) {
 	for _, src := range []string{".arch\n", ".arch a b\n", ".foo i4004\n"} {
 		if _, _, err := SplitDirective(src); err == nil {

@@ -57,14 +57,14 @@ func main() {
 	out := fs.String("o", "", "file ROM di output (default: <input>.rom)")
 	_ = fs.Parse(flagArgs)
 
-	src, err := os.ReadFile(input)
+	src, err := source.ExpandIncludes(input)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "errore lettura %q: %v\n", input, err)
 		os.Exit(1)
 	}
 
 	// La direttiva .arch (prima riga di codice) sceglie l'architettura.
-	archName, body, err := source.SplitDirective(string(src))
+	archName, body, err := source.SplitDirective(src)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "errore: %v\n", err)
 		os.Exit(1)

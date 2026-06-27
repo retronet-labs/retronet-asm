@@ -24,6 +24,23 @@ dà errore. Le architetture disponibili sono `i4004`, `i8008`, `i8080`.
 
 ---
 
+## Direttiva include: `.include`
+
+`.include "file.asm"` inserisce un altro sorgente prima del parsing. Il path e'
+relativo al file che contiene la direttiva; gli include annidati sono permessi,
+ma devono restare dentro la directory del sorgente principale.
+
+```asm
+.arch i8080
+.include "lib/cpm-bdos.asm"
+.com
+```
+
+Non ci sono fetch di rete, macro o package manager: e' solo un modo esplicito
+per riusare costanti e piccoli blocchi didattici versionati nel workspace.
+
+---
+
 ## Direttiva di posizione: `.org`
 
 `.org <indirizzo>` posiziona il codice che segue a un indirizzo preciso della ROM,
