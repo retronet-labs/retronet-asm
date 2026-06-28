@@ -23,9 +23,34 @@ programmi a registri e per i **boot sector** dell'IBM PC/XT emulato da
   `PUSHF POPF`, `IN/OUT` (porta immediata o `DX`), `NOP HLT WAIT XLAT`,
   aggiustamenti BCD `DAA DAS AAA AAS AAM AAD`.
 
-**Non** supportati (per ora): operandi in **memoria** con parentesi (es.
-`[bx+si]`, `[0x1234]`), che richiederebbero la codifica completa del ModR/M e una
-sintassi col lexer esteso. Tutte le forme registro usano ModR/M con `mod=11`.
+### Operandi in memoria
+
+Sono supportati gli operandi in **memoria** con l'indirizzamento a 16 bit
+dell'8086, in MOV, nel blocco aritmetico-logico, TEST, INC/DEC, NEG/NOT/MUL/DIV,
+shift, PUSH/POP e LEA:
+
+- combinazioni base+indice: `[bx+si]`, `[bx+di]`, `[bp+si]`, `[bp+di]`;
+- registro singolo: `[bx]`, `[bp]`, `[si]`, `[di]`;
+- con spiazzamento, numerico o simbolico: `[bx+0x10]`, `[bp-2]`, `[msg+bx]`;
+- indirizzo diretto: `[0x1234]`, `[msg]`.
+
+La dimensione dello spiazzamento (disp8/disp16) si sceglie dalla sintassi: un
+letterale che entra in 8 bit usa disp8, un simbolo usa sempre disp16 (così Size ed
+Encode concordano senza risolvere le label). Per le forme **memoria-immediato**,
+ambigue sulla larghezza, serve uno specificatore `byte`/`word`:
+
+```asm
+        mov   al, [bx+si]      ; r <- m
+        mov   [di], cx         ; m <- r
+        add   ax, [msg+bx]     ; indicizzato con spiazzamento simbolico
+        mov   byte [bx], 0     ; memoria-immediato: serve byte/word
+        inc   word [count]
+        lea   si, [bx+di]      ; carica l'indirizzo effettivo
+```
+
+Esempio completo: [`examples/i8086-memdemo.asm`](../examples/i8086-memdemo.asm)
+(stampa un messaggio leggendolo con `[msg+bx]`). Non sono ancora supportati gli
+**override di segmento** (`[es:...]`).
 
 ## Boot sector
 
