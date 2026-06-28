@@ -94,6 +94,9 @@ In [`examples/`](examples/):
 | `i8008-sub.asm` (i8008) | subroutine 8008 `CAL`/`RET`: raddoppia 9 → 18 |
 | `i8008-calc.asm` (i8008) | calcolatrice binaria a una cifra, 4 operatori, I/O terminale (`6*7=`→`42`) |
 | `i8008-calc-multi.asm` (i8008) | calcolatrice binaria multi-cifra 0–255 (`12*12=`→`144`) |
+| `i8086-bootok.asm` (i8086) | boot sector: messaggio via `INT 10h` su retronet-pc |
+| `i8086-echo.asm` (i8086) | boot sector: eco dei tasti via `INT 16h`/`INT 10h` |
+| `i8086-memdemo.asm` (i8086) | boot sector: stampa leggendo con `[msg+bx]` (operandi in memoria) |
 
 I `*-bcd`/`multicifra`, assemblati, producono **gli stessi byte** delle ROM di
 esempio di retronet-4004 (`testdata/`); gli `i8008-*` girano su retronet-8008 e
@@ -119,6 +122,7 @@ un'interfaccia (`arch.Arch`):
 | Symbol table + emitter | `internal/symbols`, `internal/emitter` | [docs/due-passate.md](docs/due-passate.md) |
 | Backend Intel 4004 | `arch/i4004`     | [docs/arch-i4004.md](docs/arch-i4004.md) |
 | Backend Intel 8008 | `arch/i8008`     | [docs/arch-i8008.md](docs/arch-i8008.md) · guida d'uso: [docs/guida-i8008.md](docs/guida-i8008.md) |
+| Backend Intel 8086/8088 | `arch/i8086` | [docs/arch-i8086.md](docs/arch-i8086.md) |
 
 Lexer, parser ed emitter sono **indipendenti dall'architettura**: ogni backend
 vive in un pacchetto `arch/` che implementa `arch.Arch`.
@@ -138,6 +142,10 @@ vive in un pacchetto `arch/` che implementa `arch.Arch`.
 - [x] Esempio end-to-end `i8080` -> `.COM` -> `retronet-cpm`
 - [x] Direttiva `.com`/`.orgbase` per programmi CP/M `.COM` senza padding
 - [x] Direttiva `.include` per librerie assembly locali
+- [x] Backend `i8086` (registri/immediati, ALU, controllo, stringa) + boot sector
+- [x] `i8086`: operandi in **memoria** (ModR/M 16 bit, `[bx+si]`/`[msg+bx]`/…) e `LEA`
+- [x] Stringhe in `.byte "..."` (con escape) per i messaggi dei boot sector
+- [ ] `i8086`: override di segmento (`[es:...]`)
 
 ---
 
