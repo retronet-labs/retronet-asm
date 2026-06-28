@@ -4,14 +4,19 @@ Assembler modulare e multi-architettura dell'ecosistema **RetroNet**. Traduce un
 sorgente testuale `.asm` in una ROM binaria `.rom`, risolvendo le label
 automaticamente — niente più programmi scritti come array di byte contati a mano.
 
-Architetture supportate: **Intel 4004** (`i4004`), **Intel 8008** (`i8008`) e **Intel 8080** (`i8080`).
+Architetture supportate: **Intel 4004** (`i4004`), **Intel 8008** (`i8008`),
+**Intel 8080** (`i8080`) e **Intel 8086/8088** (`i8086`).
 
 Le ROM prodotte sono eseguibili dagli emulatori
 [retronet-4004](https://github.com/retronet-labs/retronet-4004),
 [retronet-8008](https://github.com/retronet-labs/retronet-8008),
 [retronet-8080](https://github.com/retronet-labs/retronet-8080) e, per i
 programmi `.COM` didattici, da
-[retronet-cpm](https://github.com/retronet-labs/retronet-cpm).
+[retronet-cpm](https://github.com/retronet-labs/retronet-cpm). Il backend
+`i8086` genera anche **boot sector** avviabili da
+[retronet-pc](https://github.com/retronet-labs/retronet-pc) (vedi
+`examples/i8086-bootok.asm` ed `examples/i8086-echo.asm` e
+[docs/arch-i8086.md](docs/arch-i8086.md)).
 
 ---
 
@@ -49,7 +54,7 @@ retronet-4004 -trace -dump-ram out.rom
 - Direttive: `.include "file.asm"` inserisce sorgenti locali, `.org <addr>`
   posiziona il codice, `.orgbase <addr>` cambia il PC logico senza padding,
   `.com` e' alias di `.orgbase 0x0100`, `.byte v1, v2, ...` emette dati in
-  ROM.
+  ROM (anche stringhe: `.byte "ciao", 0`, con escape `\n \r \t \0 \\ \"`).
 - Arresto: `halt: JUN halt` (i4004) · `halt: JMP halt`/`HLT` (i8008).
 
 ```asm
