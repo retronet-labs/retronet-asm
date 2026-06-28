@@ -55,6 +55,67 @@ func TestEncodeRegAndImm(t *testing.T) {
 	}
 }
 
+func TestEncodeMemory(t *testing.T) {
+	resolve := func(name string) (int, bool) {
+		if name == "msg" {
+			return 0x0200, true
+		}
+		return 0, false
+	}
+	cases := []struct {
+		mnem string
+		ops  []string
+		want []byte
+	}{
+		{"MOV", []string{"[bx]", "al"}, []byte{0x88, 0x07}},
+		{"MOV", []string{"al", "[bx]"}, []byte{0x8A, 0x07}},
+		{"MOV", []string{"ax", "[bx+si]"}, []byte{0x8B, 0x00}},
+		{"MOV", []string{"ax", "[bp]"}, []byte{0x8B, 0x46, 0x00}},
+		{"MOV", []string{"ax", "[bx+0x10]"}, []byte{0x8B, 0x47, 0x10}},
+		{"MOV", []string{"ax", "[bx+0x1234]"}, []byte{0x8B, 0x87, 0x34, 0x12}},
+		{"MOV", []string{"ax", "[0x1234]"}, []byte{0x8B, 0x06, 0x34, 0x12}},
+		{"MOV", []string{"ax", "[msg]"}, []byte{0x8B, 0x06, 0x00, 0x02}},
+		{"MOV", []string{"byte", "[bx]", "5"}, []byte{0xC6, 0x07, 0x05}},
+		{"MOV", []string{"word", "[si]", "0x1234"}, []byte{0xC7, 0x04, 0x34, 0x12}},
+		{"ADD", []string{"[bx]", "cl"}, []byte{0x00, 0x0F}},
+		{"ADD", []string{"cx", "[bx+di]"}, []byte{0x03, 0x09}},
+		{"INC", []string{"byte", "[bx]"}, []byte{0xFE, 0x07}},
+		{"INC", []string{"word", "[bx]"}, []byte{0xFF, 0x07}},
+		{"LEA", []string{"si", "[bx+di]"}, []byte{0x8D, 0x31}},
+		{"PUSH", []string{"word", "[bx]"}, []byte{0xFF, 0x37}},
+	}
+	for _, c := range cases {
+		got := enc(t, c.mnem, c.ops, 0, resolve)
+		if !bytes.Equal(got, c.want) {
+			t.Errorf("%s %v = % X, atteso % X", c.mnem, c.ops, got, c.want)
+		}
+	}
+}
+
+func TestSizeMemoryDeterministic(t *testing.T) {
+	// Con un simbolo lo spiazzamento e' sempre disp16: Size deve dare 4 byte
+	// anche senza risolvere la label (altrimenti Encode e Size divergerebbero).
+	cases := []struct {
+		ops  []string
+		want int
+	}{
+		{[]string{"ax", "[bx+5]"}, 3},      // disp8 letterale
+		{[]string{"ax", "[bx+0x1234]"}, 4}, // disp16 letterale
+		{[]string{"ax", "[msg]"}, 4},       // diretto disp16
+		{[]string{"ax", "[bx+msg]"}, 4},    // simbolo -> disp16
+		{[]string{"ax", "[bx]"}, 2},        // nessun disp
+	}
+	for _, c := range cases {
+		n, err := (I8086{}).Size(arch.Instruction{Mnemonic: "MOV", Operands: c.ops, Line: 1})
+		if err != nil {
+			t.Fatalf("MOV %v: %v", c.ops, err)
+		}
+		if n != c.want {
+			t.Errorf("Size(MOV %v) = %d, atteso %d", c.ops, n, c.want)
+		}
+	}
+}
+
 func TestEncodeRelativeJumps(t *testing.T) {
 	resolve := func(name string) (int, bool) {
 		if name == "L" {
