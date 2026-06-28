@@ -3,7 +3,10 @@
 // ':' , ',' e fine riga, saltando spazi e commenti (';').
 package lexer
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // Type è il tipo di un token.
 type Type int
@@ -16,6 +19,7 @@ const (
 	Colon                 // ':' (definizione di label)
 	Comma                 // ',' (separatore di operandi)
 	Directive             // direttiva: '.' seguito da lettere (es. ".org")
+	String                // stringa tra virgolette: "testo" (per .byte)
 )
 
 // Token è un'unità lessicale con il testo originale e la riga (1-based).
@@ -50,6 +54,13 @@ func Tokenize(src string) ([]Token, error) {
 		case c == ',':
 			toks = append(toks, Token{Comma, ",", line})
 			i++
+		case c == '"':
+			s, end, err := scanString(src, i, line)
+			if err != nil {
+				return nil, err
+			}
+			toks = append(toks, Token{String, s, line})
+			i = end
 		case c == '.':
 			j := i + 1
 			for j < n && isIdent(src[j]) { // ".org", ".arch", ...
@@ -80,6 +91,45 @@ func Tokenize(src string) ([]Token, error) {
 	}
 	toks = append(toks, Token{EOF, "", line})
 	return toks, nil
+}
+
+// scanString legge una stringa tra virgolette a partire da src[start] ('"'),
+// interpretando gli escape \n \r \t \0 \\ \". Restituisce il testo decodificato e
+// l'indice del carattere dopo la virgoletta di chiusura.
+func scanString(src string, start, line int) (string, int, error) {
+	var sb strings.Builder
+	i, n := start+1, len(src)
+	for i < n {
+		c := src[i]
+		switch {
+		case c == '"':
+			return sb.String(), i + 1, nil
+		case c == '\n':
+			return "", 0, fmt.Errorf("riga %d: stringa non terminata", line)
+		case c == '\\' && i+1 < n:
+			i++
+			switch src[i] {
+			case 'n':
+				sb.WriteByte('\n')
+			case 'r':
+				sb.WriteByte('\r')
+			case 't':
+				sb.WriteByte('\t')
+			case '0':
+				sb.WriteByte(0)
+			case '\\':
+				sb.WriteByte('\\')
+			case '"':
+				sb.WriteByte('"')
+			default:
+				return "", 0, fmt.Errorf("riga %d: escape sconosciuto \\%c", line, src[i])
+			}
+		default:
+			sb.WriteByte(c)
+		}
+		i++
+	}
+	return "", 0, fmt.Errorf("riga %d: stringa non terminata", line)
 }
 
 func isDigit(c byte) bool      { return c >= '0' && c <= '9' }

@@ -103,6 +103,8 @@ func Parse(toks []lexer.Token) ([]Stmt, error) {
 							return nil, fmt.Errorf("riga %d: .byte %d fuori range 0-255", line, v)
 						}
 						data = append(data, byte(v))
+					case lexer.String:
+						data = append(data, []byte(toks[i].Text)...)
 					case lexer.Comma:
 						// separatore tra i valori
 					default:
