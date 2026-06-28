@@ -20,6 +20,7 @@ const (
 	Comma                 // ',' (separatore di operandi)
 	Directive             // direttiva: '.' seguito da lettere (es. ".org")
 	String                // stringa tra virgolette: "testo" (per .byte)
+	Mem                   // operando in memoria tra parentesi quadre: [bx+si+disp]
 )
 
 // Token è un'unità lessicale con il testo originale e la riga (1-based).
@@ -61,6 +62,18 @@ func Tokenize(src string) ([]Token, error) {
 			}
 			toks = append(toks, Token{String, s, line})
 			i = end
+		case c == '[':
+			j := i + 1
+			for j < n && src[j] != ']' && src[j] != '\n' {
+				j++
+			}
+			if j >= n || src[j] != ']' {
+				return nil, fmt.Errorf("riga %d: parentesi quadra non chiusa", line)
+			}
+			// Testo dell'operando in memoria, spazi interni rimossi.
+			inner := strings.ReplaceAll(strings.ReplaceAll(src[i+1:j], " ", ""), "\t", "")
+			toks = append(toks, Token{Mem, "[" + inner + "]", line})
+			i = j + 1
 		case c == '.':
 			j := i + 1
 			for j < n && isIdent(src[j]) { // ".org", ".arch", ...

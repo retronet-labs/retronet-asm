@@ -142,7 +142,7 @@ func Parse(toks []lexer.Token) ([]Stmt, error) {
 			var ops []string
 			for i < len(toks) && toks[i].Type != lexer.Newline && toks[i].Type != lexer.EOF {
 				switch toks[i].Type {
-				case lexer.Ident, lexer.Number:
+				case lexer.Ident, lexer.Number, lexer.Mem:
 					ops = append(ops, toks[i].Text)
 				case lexer.Comma:
 					// separatore, ignorato
