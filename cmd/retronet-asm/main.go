@@ -17,6 +17,7 @@ import (
 
 	"github.com/retronet-labs/retronet-asm/arch"
 	"github.com/retronet-labs/retronet-asm/arch/i4004"
+	"github.com/retronet-labs/retronet-asm/arch/i6502"
 	"github.com/retronet-labs/retronet-asm/arch/i8008"
 	"github.com/retronet-labs/retronet-asm/arch/i8080"
 	"github.com/retronet-labs/retronet-asm/arch/i8086"
@@ -34,6 +35,7 @@ const defaultArch = "i4004"
 // arches è il registro delle architetture supportate (nome → costruttore).
 var arches = map[string]func() arch.Arch{
 	"i4004": i4004.New,
+	"i6502": i6502.New,
 	"i8008": i8008.New,
 	"i8080": i8080.New,
 	"i8086": i8086.New,
