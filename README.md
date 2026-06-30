@@ -4,8 +4,9 @@ Assembler modulare e multi-architettura dell'ecosistema **RetroNet**. Traduce un
 sorgente testuale `.asm` in una ROM binaria `.rom`, risolvendo le label
 automaticamente — niente più programmi scritti come array di byte contati a mano.
 
-Architetture supportate: **Intel 4004** (`i4004`), **Intel 8008** (`i8008`),
-**Intel 8080** (`i8080`) e **Intel 8086/8088** (`i8086`).
+Architetture supportate: **Intel 4004** (`i4004`), **MOS/NMOS 6502** (`i6502`),
+**Intel 8008** (`i8008`), **Intel 8080** (`i8080`) e **Intel 8086/8088**
+(`i8086`).
 
 Le ROM prodotte sono eseguibili dagli emulatori
 [retronet-4004](https://github.com/retronet-labs/retronet-4004),
@@ -54,7 +55,8 @@ retronet-4004 -trace -dump-ram out.rom
 - Direttive: `.include "file.asm"` inserisce sorgenti locali, `.org <addr>`
   posiziona il codice, `.orgbase <addr>` cambia il PC logico senza padding,
   `.com` e' alias di `.orgbase 0x0100`, `.byte v1, v2, ...` emette dati in
-  ROM (anche stringhe: `.byte "ciao", 0`, con escape `\n \r \t \0 \\ \"`).
+  ROM (anche stringhe: `.byte "ciao", 0`, con escape `\n \r \t \0 \\ \"`),
+  `.word v1, v2, ...` emette parole little-endian risolte in seconda passata.
 - Arresto: `halt: JUN halt` (i4004) · `halt: JMP halt`/`HLT` (i8008).
 
 ```asm
@@ -97,6 +99,8 @@ In [`examples/`](examples/):
 | `i8086-bootok.asm` (i8086) | boot sector: messaggio via `INT 10h` su retronet-pc |
 | `i8086-echo.asm` (i8086) | boot sector: eco dei tasti via `INT 16h`/`INT 10h` |
 | `i8086-memdemo.asm` (i8086) | boot sector: stampa leggendo con `[msg+bx]` (operandi in memoria) |
+| `i6502-loop.asm` (i6502) | loop 6502: calcola 5 x 3 e scrive `$0F` in `$0200` |
+| `i6502-decimal.asm` (i6502) | `ADC` in decimal mode: `$45 + $55`, risultato `$00` con carry |
 
 I `*-bcd`/`multicifra`, assemblati, producono **gli stessi byte** delle ROM di
 esempio di retronet-4004 (`testdata/`); gli `i8008-*` girano su retronet-8008 e
@@ -121,6 +125,7 @@ un'interfaccia (`arch.Arch`):
 | Parser           | `internal/parser`  | [docs/parser.md](docs/parser.md) |
 | Symbol table + emitter | `internal/symbols`, `internal/emitter` | [docs/due-passate.md](docs/due-passate.md) |
 | Backend Intel 4004 | `arch/i4004`     | [docs/arch-i4004.md](docs/arch-i4004.md) |
+| Backend MOS/NMOS 6502 | `arch/i6502` | [docs/arch-i6502.md](docs/arch-i6502.md) |
 | Backend Intel 8008 | `arch/i8008`     | [docs/arch-i8008.md](docs/arch-i8008.md) · guida d'uso: [docs/guida-i8008.md](docs/guida-i8008.md) |
 | Backend Intel 8086/8088 | `arch/i8086` | [docs/arch-i8086.md](docs/arch-i8086.md) |
 
@@ -145,6 +150,7 @@ vive in un pacchetto `arch/` che implementa `arch.Arch`.
 - [x] Backend `i8086` (registri/immediati, ALU, controllo, stringa) + boot sector
 - [x] `i8086`: operandi in **memoria** (ModR/M 16 bit, `[bx+si]`/`[msg+bx]`/…) e `LEA`
 - [x] Stringhe in `.byte "..."` (con escape) per i messaggi dei boot sector
+- [x] Direttiva `.word` e backend `i6502` con sintassi MOS standard
 - [ ] `i8086`: override di segmento (`[es:...]`)
 
 ---

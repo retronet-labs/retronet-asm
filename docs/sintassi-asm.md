@@ -20,7 +20,8 @@ quale CPU è scritto il programma:
 
 L'assembler usa quel nome per scegliere il backend. La direttiva **non produce
 byte** (è solo metadato). Se assente, si assume `i4004`. Un nome non registrato
-dà errore. Le architetture disponibili sono `i4004`, `i8008`, `i8080`.
+dà errore. Le architetture disponibili sono `i4004`, `i6502`, `i8008`, `i8080`
+e `i8086`.
 
 ---
 
@@ -67,7 +68,25 @@ tabella: .byte 0x41, 0x42, 0x43, 0    ; quattro byte in ROM
 ```
 
 I valori sono decimali o esadecimali, separati da virgole (o spazi). È
-indipendente dall'architettura (vale per `i4004` e `i8008`).
+indipendente dall'architettura.
+
+---
+
+## Direttiva parole: `.word`
+
+`.word v1, v2, ...` emette parole a 16 bit little-endian. A differenza di
+`.byte`, i valori possono essere label o costanti risolte in seconda passata.
+Serve soprattutto per vettori 6502 e tabelle di indirizzi.
+
+```asm
+.arch i6502
+.orgbase $8000
+start:  NOP
+        .org $FFFC
+        .word start
+```
+
+Sono accettati numeri decimali, `0x` esadecimali, `$` esadecimali e `%` binari.
 
 ---
 
@@ -117,6 +136,8 @@ sostituisce con l'indirizzo, anche se è definita più avanti nel file.
 - **Numeri**: decimali (`12`) o esadecimali (`0x0C`).
 - **Separatore**: la **virgola tra operandi è opzionale** —
   `FIM R0, 0x35` e `FIM R0 0x35` sono equivalenti.
+- **6502**: gli operandi MOS come `#$01`, `$0200,X`, `($44),Y`, `<label`,
+  `#<label` e `#>label` sono preservati e interpretati dal backend `i6502`.
 
 ## Arresto (HALT)
 

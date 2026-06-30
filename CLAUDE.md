@@ -2,7 +2,7 @@
 
 Assembler **modulare e multi-architettura** dell'ecosistema RetroNet: da un
 sorgente `.asm` produce una ROM binaria risolvendo le label. Backend supportati:
-**i4004**, **i8008**, **i8080**, **i8086/8088**. Panoramica utente:
+**i4004**, **i6502**, **i8008**, **i8080**, **i8086/8088**. Panoramica utente:
 [README.md](README.md); sintassi: [docs/sintassi-asm.md](docs/sintassi-asm.md).
 
 ## Setup su una macchina nuova (handoff)
@@ -37,14 +37,22 @@ passate** perché un salto può puntare a una label più avanti):
                                               └── interroga arch/<cpu>
 ```
 
-- `arch/` — un pacchetto per CPU (`i4004`, `i8008`, `i8080`, `i8086`), registrato
+- `arch/` — un pacchetto per CPU (`i4004`, `i6502`, `i8008`, `i8080`, `i8086`), registrato
   nella mappa `arches` della CLI; si sceglie con `.arch <nome>` (default `i4004`).
 - `internal/lexer` — token, incl. **String** (`.byte "..."` con escape
   `\n \r \t \0 \\ \"`) e **Mem** (operandi `[...]`, spazi rimossi).
 - `internal/parser` — token → `[]Stmt`; `internal/symbols` — tabella label;
   `internal/emitter` — driver a due passate.
 - Direttive: `.arch`, `.org` (page align), `.orgbase`/`.com` (PC logico senza
-  padding), `.byte` (dati/stringhe), `.equ` (costanti), `.include` (sorgenti).
+  padding), `.byte` (dati/stringhe), `.word` (parole little-endian risolte),
+  `.equ` (costanti), `.include` (sorgenti).
+
+## Backend i6502
+
+Doc: [docs/arch-i6502.md](docs/arch-i6502.md). Sintassi MOS standard:
+`LDA #$01`, `STA $0200`, `LDA ($44),Y`, branch a label. Regola importante:
+simboli address default absolute; usare `<label` per forzare zero page,
+`#<label`/`#>label` per byte basso/alto immediato. Opcode illegali fuori scope.
 
 ## Backend i8086 (il più recente)
 
@@ -74,7 +82,7 @@ Doc: [docs/arch-i8086.md](docs/arch-i8086.md). File: `arch/i8086/i8086.go`
 
 ## Stato
 
-Pipeline completa, testata e documentata; quattro backend (`i4004`/`i8008`/
+Pipeline completa, testata e documentata; backend (`i4004`/`i6502`/`i8008`/
 `i8080`/`i8086`) pubblicati. Validazione incrociata attiva: ROM 4004 == golden di
 retronet-4004; programmi 8008/8080 girano sui rispettivi emulatori e ne ri-stampa
 gli mnemonici il `-disasm`; i boot sector i8086 bootano in retronet-pc.
