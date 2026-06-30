@@ -21,6 +21,7 @@ const (
 	Directive             // direttiva: '.' seguito da lettere (es. ".org")
 	String                // stringa tra virgolette: "testo" (per .byte)
 	Mem                   // operando in memoria tra parentesi quadre: [bx+si+disp]
+	Operand               // operando composto preservato verbatim, es. #$01 o ($44),Y
 )
 
 // Token è un'unità lessicale con il testo originale e la riga (1-based).
@@ -62,6 +63,10 @@ func Tokenize(src string) ([]Token, error) {
 			}
 			toks = append(toks, Token{String, s, line})
 			i = end
+		case c == '#' || c == '(' || c == '<' || c == '>':
+			s, end := scanOperand(src, i)
+			toks = append(toks, Token{Operand, s, line})
+			i = end
 		case c == '[':
 			j := i + 1
 			for j < n && src[j] != ']' && src[j] != '\n' {
@@ -84,9 +89,12 @@ func Tokenize(src string) ([]Token, error) {
 			}
 			toks = append(toks, Token{Directive, src[i:j], line})
 			i = j
-		case isDigit(c):
+		case c == '$' || c == '%' || isDigit(c):
 			j := i
-			for j < n && isAlnum(src[j]) { // include "0x0C"
+			if src[j] == '$' || src[j] == '%' {
+				j++
+			}
+			for j < n && isAlnum(src[j]) { // include "0x0C", "$C000", "%1010"
 				j++
 			}
 			toks = append(toks, Token{Number, src[i:j], line})
@@ -104,6 +112,16 @@ func Tokenize(src string) ([]Token, error) {
 	}
 	toks = append(toks, Token{EOF, "", line})
 	return toks, nil
+}
+
+// scanOperand conserva un operando composto fino a spazi, commento o fine riga.
+// Serve alle sintassi MOS 6502 come "#$01" e "($44),Y".
+func scanOperand(src string, start int) (string, int) {
+	i, n := start, len(src)
+	for i < n && src[i] != '\n' && src[i] != '\r' && src[i] != ' ' && src[i] != '\t' && src[i] != ';' {
+		i++
+	}
+	return src[start:i], i
 }
 
 // scanString legge una stringa tra virgolette a partire da src[start] ('"'),

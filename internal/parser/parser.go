@@ -21,6 +21,7 @@ type Stmt struct {
 	Org     *int              // se non-nil: ".org <Org>" posiziona il codice qui
 	OrgBase *int              // se non-nil: ".orgbase <OrgBase>" cambia il PC logico senza padding
 	Data    []byte            // se non-nil: ".byte v1, v2, ..." byte letterali da emettere
+	Words   []string          // se non-nil: ".word v1, v2, ..." parole little-endian risolte in passata 2
 	Equ     *EquDef           // se non-nil: ".equ <Name> <Value>" costante simbolica
 	Line    int               // riga sorgente (1-based)
 }
@@ -116,6 +117,23 @@ func Parse(toks []lexer.Token) ([]Stmt, error) {
 					return nil, fmt.Errorf("riga %d: .byte richiede almeno un valore", line)
 				}
 				st.Data = data
+			case ".word":
+				var words []string
+				for i < len(toks) && toks[i].Type != lexer.Newline && toks[i].Type != lexer.EOF {
+					switch toks[i].Type {
+					case lexer.Number, lexer.Ident:
+						words = append(words, toks[i].Text)
+					case lexer.Comma:
+						// separatore
+					default:
+						return nil, fmt.Errorf("riga %d: .word: token inatteso %q", line, toks[i].Text)
+					}
+					i++
+				}
+				if len(words) == 0 {
+					return nil, fmt.Errorf("riga %d: .word richiede almeno un valore", line)
+				}
+				st.Words = words
 			case ".equ":
 				if i >= len(toks) || toks[i].Type != lexer.Ident {
 					return nil, fmt.Errorf("riga %d: sintassi: .equ <nome> <valore>", line)
@@ -142,7 +160,7 @@ func Parse(toks []lexer.Token) ([]Stmt, error) {
 			var ops []string
 			for i < len(toks) && toks[i].Type != lexer.Newline && toks[i].Type != lexer.EOF {
 				switch toks[i].Type {
-				case lexer.Ident, lexer.Number, lexer.Mem:
+				case lexer.Ident, lexer.Number, lexer.Mem, lexer.Operand:
 					ops = append(ops, toks[i].Text)
 				case lexer.Comma:
 					// separatore, ignorato
@@ -159,7 +177,7 @@ func Parse(toks []lexer.Token) ([]Stmt, error) {
 		if i < len(toks) && toks[i].Type != lexer.Newline && toks[i].Type != lexer.EOF {
 			return nil, fmt.Errorf("riga %d: token inatteso %q", toks[i].Line, toks[i].Text)
 		}
-		if st.Label == "" && st.Instr == nil && st.Org == nil && st.OrgBase == nil && st.Data == nil && st.Equ == nil {
+		if st.Label == "" && st.Instr == nil && st.Org == nil && st.OrgBase == nil && st.Data == nil && st.Words == nil && st.Equ == nil {
 			return nil, fmt.Errorf("riga %d: riga non valida", line)
 		}
 
@@ -177,9 +195,14 @@ func parseNum(s string) (int, error) {
 	t := strings.TrimSpace(s)
 	var n int64
 	var err error
-	if strings.HasPrefix(strings.ToLower(t), "0x") {
+	switch {
+	case strings.HasPrefix(strings.ToLower(t), "0x"):
 		n, err = strconv.ParseInt(t[2:], 16, 32)
-	} else {
+	case strings.HasPrefix(t, "$"):
+		n, err = strconv.ParseInt(t[1:], 16, 32)
+	case strings.HasPrefix(t, "%"):
+		n, err = strconv.ParseInt(t[1:], 2, 32)
+	default:
 		n, err = strconv.ParseInt(t, 10, 32)
 	}
 	if err != nil {

@@ -4,6 +4,8 @@ package emitter
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/retronet-labs/retronet-asm/arch"
 	"github.com/retronet-labs/retronet-asm/internal/parser"
@@ -53,6 +55,7 @@ func Assemble(stmts []parser.Stmt, a arch.Arch) ([]byte, error) {
 			pc += sz
 		}
 		pc += len(st.Data)
+		pc += 2 * len(st.Words)
 		// Le costanti .equ entrano nella symbol table come le label (nome → valore),
 		// quindi sono usabili anche prima della loro definizione (risolte in passata 2).
 		if st.Equ != nil {
@@ -87,6 +90,17 @@ func Assemble(stmts []parser.Stmt, a arch.Arch) ([]byte, error) {
 			pc += len(st.Data)
 			continue
 		}
+		if len(st.Words) > 0 {
+			for _, w := range st.Words {
+				v, err := parseWord(w, syms.Lookup)
+				if err != nil {
+					return nil, fmt.Errorf("riga %d: %w", st.Line, err)
+				}
+				code = append(code, byte(v), byte(v>>8))
+				pc += 2
+			}
+			continue
+		}
 		if st.Instr == nil {
 			continue // riga di sola label: nessun byte
 		}
@@ -98,6 +112,68 @@ func Assemble(stmts []parser.Stmt, a arch.Arch) ([]byte, error) {
 		pc += len(b)
 	}
 	return code, nil
+}
+
+func parseWord(s string, resolve arch.Resolver) (uint16, error) {
+	v, err := parseValue(s, resolve)
+	if err != nil {
+		return 0, err
+	}
+	if v < 0 || v > 0xFFFF {
+		return 0, fmt.Errorf(".word 0x%X fuori range 16 bit", v)
+	}
+	return uint16(v), nil
+}
+
+func parseValue(s string, resolve arch.Resolver) (int, error) {
+	t := strings.TrimSpace(s)
+	if t == "" {
+		return 0, fmt.Errorf("operando vuoto")
+	}
+	if isNumber(t) {
+		return parseNum(t)
+	}
+	if resolve == nil {
+		return 0, fmt.Errorf("simbolo %q non risolvibile", t)
+	}
+	v, ok := resolve(t)
+	if !ok {
+		return 0, fmt.Errorf("simbolo non definito: %q", t)
+	}
+	return v, nil
+}
+
+func parseNum(s string) (int, error) {
+	t := strings.TrimSpace(s)
+	var n int64
+	var err error
+	switch {
+	case strings.HasPrefix(strings.ToLower(t), "0x"):
+		n, err = strconv.ParseInt(t[2:], 16, 32)
+	case strings.HasPrefix(t, "$"):
+		n, err = strconv.ParseInt(t[1:], 16, 32)
+	case strings.HasPrefix(t, "%"):
+		n, err = strconv.ParseInt(t[1:], 2, 32)
+	default:
+		n, err = strconv.ParseInt(t, 10, 32)
+	}
+	if err != nil {
+		return 0, fmt.Errorf("numero non valido %q", s)
+	}
+	return int(n), nil
+}
+
+func isNumber(s string) bool {
+	if s == "" {
+		return false
+	}
+	if s[0] == '$' || s[0] == '%' {
+		return true
+	}
+	if s[0] == '-' || s[0] == '+' {
+		s = s[1:]
+	}
+	return s != "" && s[0] >= '0' && s[0] <= '9'
 }
 
 func maxAddress(a arch.Arch) int {

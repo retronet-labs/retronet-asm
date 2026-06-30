@@ -85,6 +85,20 @@ func TestTokenizeUnexpectedChar(t *testing.T) {
 	}
 }
 
+func TestTokenize6502Operands(t *testing.T) {
+	toks, err := Tokenize("LDA #$01\nSTA ($44),Y\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []tok{
+		{Ident, "LDA"}, {Operand, "#$01"}, {Newline, ""},
+		{Ident, "STA"}, {Operand, "($44),Y"}, {Newline, ""}, {EOF, ""},
+	}
+	if got := collect(toks); !equalToks(got, want) {
+		t.Fatalf("token = %v, atteso %v", got, want)
+	}
+}
+
 func equalToks(a, b []tok) bool {
 	if len(a) != len(b) {
 		return false

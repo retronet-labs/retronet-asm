@@ -48,7 +48,7 @@ func SplitDirective(src string) (arch string, body string, err error) {
 			}
 			lines[i] = "" // rimuovi la direttiva mantenendo il numero di riga
 			return fields[1], strings.Join(lines, "\n"), nil
-		case ".org", ".orgbase", ".com", ".byte", ".equ":
+		case ".org", ".orgbase", ".com", ".byte", ".word", ".equ":
 			// Direttiva posizionale: la gestiscono lexer/parser/emitter. Nessun
 			// .arch in testa → arch vuoto (default), sorgente invariato.
 			return "", src, nil
