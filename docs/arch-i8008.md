@@ -86,19 +86,19 @@ genera la forma canonica.
 
 ## Validazione
 
-Esempi in [`examples/`](../examples/), tutti verificati assemblando e poi
+Esempi in [`examples/i8008/`](../examples/i8008/), tutti verificati assemblando e poi
 eseguendo la ROM su `retronet-8008`:
 
 | File | Cosa mostra | Risultato |
 |------|-------------|-----------|
-| `i8008-demo.asm` | istruzioni a 1 byte senza operandi | round-trip `-disasm` identico |
-| `i8008-loop.asm` | loop con `LBI`/`ADB`/`DCB`/`JFZ` (somma 5+4+3+2+1) | `A = 0x0F` |
-| `i8008-sub.asm`  | subroutine `CAL`/`RET` (raddoppia 9) | `A = 0x12` |
+| `01-demo.asm` | istruzioni a 1 byte senza operandi | round-trip `-disasm` identico |
+| `02-loop.asm` | loop con `LBI`/`ADB`/`DCB`/`JFZ` (somma 5+4+3+2+1) | `A = 0x0F` |
+| `03-subroutine.asm`  | subroutine `CAL`/`RET` (raddoppia 9) | `A = 0x12` |
 
 Esempio di catena completa:
 
 ```console
-$ retronet-asm build examples/i8008-loop.asm -o loop.rom
+$ retronet-asm build examples/i8008/02-loop.asm -o loop.rom
 $ retronet-8008 -bin loop.rom -disasm 6
 0000: 0E 05    LBI #0x05
 0002: 06 00    LAI #0x00

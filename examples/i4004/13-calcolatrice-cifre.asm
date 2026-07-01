@@ -1,7 +1,7 @@
 .arch i4004
 ; calcolatrice-cifre — input multi-cifra (fino a 4) con display a soppressione
 ; di zeri iniziali. Si digitano le cifre, poi '=' per mostrare.
-;   retronet-asm build examples/calcolatrice-cifre.asm -o calc.rom
+;   retronet-asm build examples/i4004/13-calcolatrice-cifre.asm -o calc.rom
 ;   echo 308= | retronet-4004 -io calc.rom        ->  display: 308
         LDM 0
         DCL

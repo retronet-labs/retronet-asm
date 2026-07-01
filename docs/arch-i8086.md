@@ -48,7 +48,7 @@ ambigue sulla larghezza, serve uno specificatore `byte`/`word`:
         lea   si, [bx+di]      ; carica l'indirizzo effettivo
 ```
 
-Esempio completo: [`examples/i8086-memdemo.asm`](../examples/i8086-memdemo.asm)
+Esempio completo: [`examples/i8086/04-memoria-indicizzata.asm`](../examples/i8086/04-memoria-indicizzata.asm)
 (stampa un messaggio leggendolo con `[msg+bx]`). Non sono ancora supportati gli
 **override di segmento** (`[es:...]`).
 
@@ -74,12 +74,17 @@ msg:    .byte "Ciao", 0
 - L'immagine prodotta è di 512 byte; `retronet-pc` la accetta come floppy
   riempiendola al formato standard.
 
-Esempio completo: [`examples/i8086-bootok.asm`](../examples/i8086-bootok.asm)
-(stampa un messaggio via `INT 10h`) ed [`examples/i8086-echo.asm`](../examples/i8086-echo.asm)
+Il backend `i8086` non e' limitato ai boot sector: puo' assemblare anche normali
+frammenti real mode o immagini caricate da un altro loader. Gli esempi in
+`examples/i8086/` sono boot sector perche' sono eseguibili direttamente da
+`retronet-pc` senza introdurre un formato DOS `.COM` o un loader separato.
+
+Esempio completo: [`examples/i8086/02-stampa-stringa.asm`](../examples/i8086/02-stampa-stringa.asm)
+(stampa un messaggio via `INT 10h`) ed [`examples/i8086/03-echo-tastiera.asm`](../examples/i8086/03-echo-tastiera.asm)
 (eco dei tasti via `INT 16h`/`INT 10h`).
 
 ```bash
-go run ./cmd/retronet-asm build examples/i8086-bootok.asm -o bootok.rom
+go run ./cmd/retronet-asm build examples/i8086/02-stampa-stringa.asm -o bootok.rom
 # poi, in retronet-pc:
 go run ./cmd/retronet-pc -bios <BIOS.ROM> -floppy bootok.rom
 ```

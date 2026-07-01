@@ -2,7 +2,7 @@
 ; calcolatrice 8008 (binaria, una cifra per operando). Legge "C op C" dal
 ; terminale ASCII (INP porta 0), calcola + - * / in binario e stampa il
 ; risultato in decimale (OUT porta 8). L'8008 non ha DAA: si lavora in binario.
-;   retronet-asm build examples/i8008-calc.asm -o calc.rom
+;   retronet-asm build examples/i8008/04-calcolatrice.asm -o calc.rom
 ;   retronet-8008 -bin calc.rom -terminal-input "6*7=" -steps 100000   ->  42
 ; Nota: la sottrazione assume A >= B (niente segno in questa prima versione).
 .equ ZERO  0x30         ; '0'

@@ -10,13 +10,14 @@ Architetture supportate: **Intel 4004** (`i4004`), **MOS/NMOS 6502** (`i6502`),
 
 Le ROM prodotte sono eseguibili dagli emulatori
 [retronet-4004](https://github.com/retronet-labs/retronet-4004),
+[retronet-6502](https://github.com/retronet-labs/retronet-6502),
 [retronet-8008](https://github.com/retronet-labs/retronet-8008),
 [retronet-8080](https://github.com/retronet-labs/retronet-8080) e, per i
 programmi `.COM` didattici, da
 [retronet-cpm](https://github.com/retronet-labs/retronet-cpm). Il backend
 `i8086` genera anche **boot sector** avviabili da
 [retronet-pc](https://github.com/retronet-labs/retronet-pc) (vedi
-`examples/i8086-bootok.asm` ed `examples/i8086-echo.asm` e
+`examples/i8086/02-stampa-stringa.asm` ed `examples/i8086/03-echo-tastiera.asm` e
 [docs/arch-i8086.md](docs/arch-i8086.md)).
 
 ---
@@ -25,10 +26,10 @@ programmi `.COM` didattici, da
 
 ```bash
 # assembla un sorgente .asm in una .rom
-go run ./cmd/retronet-asm build examples/somma-multicifra.asm -o out.rom
+go run ./cmd/retronet-asm build examples/i4004/05-somma-multicifra.asm -o out.rom
 
-# (senza -o, l'output prende il nome dell'input: examples/somma-multicifra.rom)
-go run ./cmd/retronet-asm build examples/somma-multicifra.asm
+# (senza -o, l'output prende il nome dell'input: examples/i4004/05-somma-multicifra.rom)
+go run ./cmd/retronet-asm build examples/i4004/05-somma-multicifra.asm
 
 # tutti i test
 go test ./...
@@ -77,35 +78,22 @@ Riferimento completo: [`docs/sintassi-asm.md`](docs/sintassi-asm.md).
 
 ## Esempi
 
-In [`examples/`](examples/):
+In [`examples/`](examples/) gli esempi sono divisi per architettura. Ogni
+programma ha un `.asm` assemblabile e un `.md` didattico con spiegazione,
+comandi e stato atteso.
 
-| File | Cosa fa |
-|------|---------|
-| `hello4004.asm`     | scrive 5 sulla porta di output (il "ciao mondo") |
-| `add.asm`           | addizione binaria 4 + 3 |
-| `moltiplicazione.asm` | 3 × 4 con loop ISZ |
-| `somma-bcd.asm`     | calcolatrice BCD a cifra singola (7 + 5) |
-| `somma-multicifra.asm` | addizione BCD multi-cifra (47 + 58 = 105) |
-| `sottrazione-bcd.asm` | sottrazione BCD a cifra singola (7 − 5, TCS) |
-| `sottrazione-multicifra.asm` | sottrazione BCD multi-cifra (52 − 27 = 25) |
-| `moltiplicazione-bcd.asm` | moltiplicazione per addizioni ripetute (25 × 5 = 125) |
-| `divisione-bcd.asm` | divisione per sottrazioni ripetute, con JCN (7 / 2 = 3 r 1) |
-| `i8080-hello.asm` (i8080) | stampa `HI` sulla porta terminale convenzionale `1` |
-| `i8008-demo.asm` (i8008) | istruzioni 8008 a 1 byte senza operandi |
-| `i8008-loop.asm` (i8008) | loop 8008: somma 5+4+3+2+1 = 15 (`LBI`/`ADB`/`DCB`/`JFZ`) |
-| `i8008-sub.asm` (i8008) | subroutine 8008 `CAL`/`RET`: raddoppia 9 → 18 |
-| `i8008-calc.asm` (i8008) | calcolatrice binaria a una cifra, 4 operatori, I/O terminale (`6*7=`→`42`) |
-| `i8008-calc-multi.asm` (i8008) | calcolatrice binaria multi-cifra 0–255 (`12*12=`→`144`) |
-| `i8086-bootok.asm` (i8086) | boot sector: messaggio via `INT 10h` su retronet-pc |
-| `i8086-echo.asm` (i8086) | boot sector: eco dei tasti via `INT 16h`/`INT 10h` |
-| `i8086-memdemo.asm` (i8086) | boot sector: stampa leggendo con `[msg+bx]` (operandi in memoria) |
-| `i6502-loop.asm` (i6502) | loop 6502: calcola 5 x 3 e scrive `$0F` in `$0200` |
-| `i6502-decimal.asm` (i6502) | `ADC` in decimal mode: `$45 + $55`, risultato `$00` con carry |
+| Cartella | Contenuto |
+|----------|-----------|
+| [`examples/i4004`](examples/i4004) | serie completa: output base, aritmetica, BCD e calcolatrici |
+| [`examples/i8008`](examples/i8008) | cinque esempi: istruzioni base, loop, subroutine e calcolatrici binarie |
+| [`examples/i8080`](examples/i8080) | dieci esempi: I/O, registri, loop, memoria, stack, 16 bit e CP/M `.COM` |
+| [`examples/i6502`](examples/i6502) | vettore reset, branch, decimal mode, addressing e stack |
+| [`examples/i8086`](examples/i8086) | dieci boot sector PC con BIOS, tastiera, stack, video, memoria e stringhe |
 
-I `*-bcd`/`multicifra`, assemblati, producono **gli stessi byte** delle ROM di
-esempio di retronet-4004 (`testdata/`); gli `i8008-*` girano su retronet-8008 e
-il suo `-disasm` ne ri-stampa gli identici mnemonici: è la validazione incrociata
-assembler↔emulatore.
+I programmi BCD 4004 migrati sotto `examples/i4004/` continuano a produrre gli
+stessi byte golden delle ROM storiche. Gli esempi 8008 restano allineati al
+disassembler di `retronet-8008`; i 6502 includono vettori hardware; gli 8086
+sono boot sector da 512 byte con firma `55 AA`.
 
 ---
 

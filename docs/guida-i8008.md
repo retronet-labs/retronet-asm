@@ -112,14 +112,14 @@ Per stampare la cifra `d` (0–9) si fa `ADI 0x30` (+`'0'`) e poi `OUT 8`.
 
 ## 6. Esempi commentati
 
-Tutti in [`examples/`](../examples/), assemblabili ed eseguibili come sopra.
+Tutti in [`examples/i8008/`](../examples/i8008/), assemblabili ed eseguibili come sopra.
 
-- **`i8008-loop.asm`** — somma `5+4+3+2+1` con un loop (`LBI`/`ADB`/`DCB`/`JFZ`) e
+- **`02-loop.asm`** — somma `5+4+3+2+1` con un loop (`LBI`/`ADB`/`DCB`/`JFZ`) e
   la costante `.equ COUNT 5`. Esegui: `retronet-8008 -bin loop.rom` → `A=0x0F`.
-- **`i8008-sub.asm`** — subroutine `CAL`/`RET` che raddoppia 9 → `A=0x12`.
-- **`i8008-calc.asm`** — calcolatrice a **una cifra**, 4 operatori, I/O terminale:
+- **`03-subroutine.asm`** — subroutine `CAL`/`RET` che raddoppia 9 → `A=0x12`.
+- **`04-calcolatrice.asm`** — calcolatrice a **una cifra**, 4 operatori, I/O terminale:
   `-terminal-input "6*7="` → `42`.
-- **`i8008-calc-multi.asm`** — calcolatrice **multi-cifra** (binaria, 0–255):
+- **`05-calcolatrice-multicifra.asm`** — calcolatrice **multi-cifra** (binaria, 0–255):
   `-terminal-input "12*12="` → `144`. `readnum` costruisce il numero (`×10 + cifra`),
   il display converte il binario in decimale a 3 cifre.
 
@@ -134,7 +134,7 @@ Esempio minimo completo:
         HLT
 ```
 
-(Per risultati ≥ 10 serve la conversione binario→decimale, vedi `i8008-calc-multi.asm`.)
+(Per risultati ≥ 10 serve la conversione binario→decimale, vedi `05-calcolatrice-multicifra.asm`.)
 
 ---
 

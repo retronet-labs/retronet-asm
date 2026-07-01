@@ -3,7 +3,7 @@
 ; Legge "N op N" dal terminale ASCII (INP 0), calcola + - * / in binario e stampa
 ; il risultato in decimale (OUT 8). L'8008 e' a 8 bit e non ha DAA: aritmetica
 ; binaria (contrasto con la calcolatrice 4004, che e' BCD).
-;   retronet-asm build examples/i8008-calc-multi.asm -o calc.rom
+;   retronet-asm build examples/i8008/05-calcolatrice-multicifra.asm -o calc.rom
 ;   retronet-8008 -bin calc.rom -terminal-input "12*12=" -steps 2000000   ->  144
 ; Limiti: valori e risultato 0..255; la sottrazione assume N1 >= N2; overflow ignorato.
 .equ ZERO  0x30         ; '0'

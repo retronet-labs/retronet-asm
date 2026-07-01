@@ -23,7 +23,7 @@ questo repo. Esempi i8086 → boot sector per `retronet-pc`.
 ## Comandi
 
 - Test: `go test ./...` ; Formattazione: `gofmt -w .` ; Analisi: `go vet ./...`
-- Build di un esempio: `go run ./cmd/retronet-asm build examples/i8086-bootok.asm -o bootok.rom`
+- Build di un esempio: `go run ./cmd/retronet-asm build examples/i8086/02-stampa-stringa.asm -o bootok.rom`
 - Senza `-o`, l'output prende il nome dell'input (`.rom`).
 
 ## Architettura
@@ -71,7 +71,8 @@ Doc: [docs/arch-i8086.md](docs/arch-i8086.md). File: `arch/i8086/i8086.go`
   e gli indirizzi non slittano tra le due passate. `Size` delega a `Encode(…,nil)`.
 - **Boot sector**: `.orgbase 0x7C00` + codice + `.org 0x7DFE` + `.byte 0x55,0xAA`
   → immagine da 512 byte avviabile in `retronet-pc` come `-floppy`. Esempi:
-  `i8086-bootok.asm`, `i8086-echo.asm`, `i8086-memdemo.asm` — validati e2e.
+  `examples/i8086/02-stampa-stringa.asm`, `03-echo-tastiera.asm`,
+  `04-memoria-indicizzata.asm` — validati e2e.
 - Mancante: **override di segmento** (`[es:...]`).
 
 ## Convenzioni
